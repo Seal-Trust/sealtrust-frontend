@@ -2,34 +2,41 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import { Share2, Download, Copy, Check, ExternalLink } from "lucide-react";
+import { X, Share2, Download, Copy, Check, ExternalLink } from "lucide-react";
 import { toPng } from "html-to-image";
+import QRCode from "react-qr-code";
 
 interface DatasetReceiptProps {
   datasetUrl: string;
   hash: string;
+  blobId: string;
+  policyId: string;
   timestamp: number;
   txId: string;
   nftId: string;
   registrant: string;
   format?: string;
   schemaVersion?: string;
+  onClose?: () => void;
 }
 
 export function DatasetReceipt({
   datasetUrl,
   hash,
+  blobId,
+  policyId,
   timestamp,
   txId,
   nftId,
   registrant,
   format = "CSV",
-  schemaVersion = "v1.0"
+  schemaVersion = "v1.0",
+  onClose
 }: DatasetReceiptProps) {
   const [copied, setCopied] = useState(false);
   const [downloading, setDownloading] = useState(false);
 
-  const receiptUrl = `${window.location.origin}/verify?hash=${hash}`;
+  const receiptUrl = `${typeof window !== 'undefined' ? window.location.origin : ''}/verify?hash=${hash}`;
 
   const handleCopyLink = async () => {
     await navigator.clipboard.writeText(receiptUrl);
@@ -46,7 +53,7 @@ export function DatasetReceipt({
       const dataUrl = await toPng(element, {
         quality: 1,
         pixelRatio: 2,
-        backgroundColor: '#000000',
+        backgroundColor: '#ffffff',
       });
 
       const link = document.createElement('a');
@@ -76,36 +83,36 @@ export function DatasetReceipt({
     }
   };
 
-  return (
+  const content = (
     <div className="w-full space-y-4">
       {/* Receipt Card */}
       <div
         id="receipt-content"
-        className="relative overflow-hidden rounded-lg bg-black border border-gray-800 p-8"
+        className="relative overflow-hidden rounded-lg bg-white border border-gray-200 p-8"
       >
         {/* Glassmorphism effect */}
-        <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+        <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-gray-200 to-transparent" />
 
         {/* Header with Logo */}
-        <div className="flex items-center justify-between mb-8 pb-6 border-b border-gray-900">
+        <div className="flex items-center justify-between mb-8 pb-6 border-b border-gray-100">
           <div className="flex items-center gap-3">
             <Image
               src="/logo.svg"
               alt="TruthMarket"
               width={40}
               height={40}
-              className="filter drop-shadow-[0_0_10px_rgba(255,255,255,0.3)]"
+              className="filter drop-shadow-[0_0_10px_rgba(249,115,22,0.3)]"
             />
             <div>
-              <h3 className="text-xl font-medium bg-gradient-to-b from-white via-gray-200 to-gray-400 bg-clip-text text-transparent">
+              <h3 className="text-xl font-medium bg-gradient-to-b from-gray-900 via-gray-800 to-gray-600 bg-clip-text text-transparent">
                 TRUTH MARKET
               </h3>
-              <p className="text-xs text-gray-600">Cryptographic Dataset Registry</p>
+              <p className="text-xs text-gray-500">Cryptographic Dataset Registry</p>
             </div>
           </div>
           <div className="text-right">
-            <p className="text-xs text-gray-600">Certificate of Registration</p>
-            <p className="text-xs text-gray-500 font-mono">#{nftId.slice(0, 12)}</p>
+            <p className="text-xs text-gray-500">Certificate of Registration</p>
+            <p className="text-xs text-gray-400 font-mono">#{nftId.slice(0, 12)}</p>
           </div>
         </div>
 
@@ -113,25 +120,37 @@ export function DatasetReceipt({
         <div className="space-y-6">
           {/* Dataset Info */}
           <div>
-            <p className="text-xs text-gray-600 mb-2">Dataset URL</p>
-            <p className="text-sm text-white/90 font-medium break-all leading-relaxed">
+            <p className="text-xs text-gray-500 mb-2">Dataset URL</p>
+            <p className="text-sm text-gray-900 font-medium break-all leading-relaxed">
               {datasetUrl}
             </p>
           </div>
 
           {/* Hash */}
           <div>
-            <p className="text-xs text-gray-600 mb-2">SHA-256 Hash</p>
-            <p className="text-xs text-gray-400 font-mono break-all leading-relaxed">
+            <p className="text-xs text-gray-500 mb-2">SHA-256 Hash</p>
+            <p className="text-xs text-gray-600 font-mono break-all leading-relaxed">
               {hash}
             </p>
           </div>
 
-          {/* Grid of Details */}
-          <div className="grid grid-cols-2 gap-4 pt-4 border-t border-gray-900">
+          {/* Storage IDs */}
+          <div className="grid grid-cols-2 gap-4">
             <div>
-              <p className="text-xs text-gray-600 mb-1">Timestamp</p>
-              <p className="text-sm text-white/80">
+              <p className="text-xs text-gray-500 mb-1">Walrus Blob ID</p>
+              <p className="text-xs text-gray-600 font-mono truncate">{blobId}</p>
+            </div>
+            <div>
+              <p className="text-xs text-gray-500 mb-1">Seal Policy ID</p>
+              <p className="text-xs text-gray-600 font-mono truncate">{policyId}</p>
+            </div>
+          </div>
+
+          {/* Grid of Details */}
+          <div className="grid grid-cols-2 gap-4 pt-4 border-t border-gray-100">
+            <div>
+              <p className="text-xs text-gray-500 mb-1">Timestamp</p>
+              <p className="text-sm text-gray-800">
                 {new Date(timestamp).toLocaleString('en-US', {
                   year: 'numeric',
                   month: 'long',
@@ -143,40 +162,40 @@ export function DatasetReceipt({
               </p>
             </div>
             <div>
-              <p className="text-xs text-gray-600 mb-1">Format</p>
-              <p className="text-sm text-white/80">{format}</p>
+              <p className="text-xs text-gray-500 mb-1">Format</p>
+              <p className="text-sm text-gray-800">{format}</p>
             </div>
             <div>
-              <p className="text-xs text-gray-600 mb-1">Schema Version</p>
-              <p className="text-sm text-white/80">{schemaVersion}</p>
+              <p className="text-xs text-gray-500 mb-1">Schema Version</p>
+              <p className="text-sm text-gray-800">{schemaVersion}</p>
             </div>
             <div>
-              <p className="text-xs text-gray-600 mb-1">Network</p>
-              <p className="text-sm text-white/80">Sui Testnet</p>
+              <p className="text-xs text-gray-500 mb-1">Network</p>
+              <p className="text-sm text-gray-800">Sui Testnet</p>
             </div>
           </div>
 
           {/* Registrant */}
-          <div className="pt-4 border-t border-gray-900">
-            <p className="text-xs text-gray-600 mb-1">Registered By</p>
-            <p className="text-xs text-gray-400 font-mono">{registrant}</p>
+          <div className="pt-4 border-t border-gray-100">
+            <p className="text-xs text-gray-500 mb-1">Registered By</p>
+            <p className="text-xs text-gray-600 font-mono">{registrant}</p>
           </div>
 
           {/* Footer */}
-          <div className="pt-6 border-t border-gray-900">
+          <div className="pt-6 border-t border-gray-100">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs text-gray-600 mb-1">Verification Status</p>
+                <p className="text-xs text-gray-500 mb-1">Verification Status</p>
                 <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 rounded-full bg-white/40" />
-                  <p className="text-xs text-white/60">TEE Verified & On-Chain</p>
+                  <div className="w-2 h-2 rounded-full bg-green-500" />
+                  <p className="text-xs text-gray-700">TEE Verified & On-Chain</p>
                 </div>
               </div>
               <a
                 href={`https://suiscan.xyz/testnet/tx/${txId}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-white transition-colors"
+                className="flex items-center gap-1.5 text-xs text-gray-600 hover:text-gray-900 transition-colors"
               >
                 <span>View Transaction</span>
                 <ExternalLink className="w-3 h-3" />
@@ -200,7 +219,7 @@ export function DatasetReceipt({
       <div className="flex gap-3">
         <button
           onClick={handleShare}
-          className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-white/5 hover:bg-white/10 border border-gray-800 hover:border-gray-700 rounded-lg text-sm text-white/90 transition-all"
+          className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-gray-50 hover:bg-gray-100 border border-gray-200 hover:border-gray-300 rounded-lg text-sm text-gray-700 transition-all"
         >
           <Share2 className="w-4 h-4" />
           <span>Share Receipt</span>
@@ -208,7 +227,7 @@ export function DatasetReceipt({
 
         <button
           onClick={handleCopyLink}
-          className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-white/5 hover:bg-white/10 border border-gray-800 hover:border-gray-700 rounded-lg text-sm text-white/90 transition-all"
+          className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-gray-50 hover:bg-gray-100 border border-gray-200 hover:border-gray-300 rounded-lg text-sm text-gray-700 transition-all"
         >
           {copied ? (
             <>
@@ -226,7 +245,7 @@ export function DatasetReceipt({
         <button
           onClick={handleDownloadReceipt}
           disabled={downloading}
-          className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-white/5 hover:bg-white/10 border border-gray-800 hover:border-gray-700 rounded-lg text-sm text-white/90 transition-all disabled:opacity-50"
+          className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-gray-50 hover:bg-gray-100 border border-gray-200 hover:border-gray-300 rounded-lg text-sm text-gray-700 transition-all disabled:opacity-50"
         >
           <Download className="w-4 h-4" />
           <span>{downloading ? 'Generating...' : 'Download PNG'}</span>
@@ -234,11 +253,47 @@ export function DatasetReceipt({
       </div>
 
       {/* Share URL */}
-      <div className="relative overflow-hidden rounded-lg bg-white/[0.02] border border-gray-800 p-4">
-        <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
-        <p className="text-xs text-gray-600 mb-2">Verification URL</p>
-        <p className="text-xs text-gray-400 font-mono break-all">{receiptUrl}</p>
+      <div className="relative overflow-hidden rounded-lg bg-gray-50 border border-gray-200 p-4">
+        <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-gray-300 to-transparent" />
+        <p className="text-xs text-gray-500 mb-2">Verification URL</p>
+        <p className="text-xs text-gray-600 font-mono break-all">{receiptUrl}</p>
+      </div>
+
+      {/* QR Code */}
+      <div className="pt-6 border-t border-gray-200">
+        <h3 className="font-semibold mb-4 text-center">Verification QR Code</h3>
+        <div className="flex justify-center bg-white p-4 rounded-lg border border-gray-200">
+          <QRCode
+            value={receiptUrl}
+            size={200}
+          />
+        </div>
+        <p className="text-xs text-center text-gray-500 mt-2">
+          Scan to verify this dataset
+        </p>
       </div>
     </div>
   );
+
+  // If onClose is provided, wrap in modal
+  if (onClose) {
+    return (
+      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto">
+        <div className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto bg-white rounded-xl shadow-2xl">
+          <button
+            onClick={onClose}
+            className="sticky top-4 left-full ml-4 p-2 rounded-lg bg-white hover:bg-gray-100 border border-gray-200 shadow-lg transition-all z-10"
+          >
+            <X className="w-5 h-5 text-gray-600" />
+          </button>
+          <div className="p-6">
+            {content}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Otherwise render inline
+  return content;
 }
