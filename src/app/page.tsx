@@ -53,7 +53,7 @@ export default function Home() {
     <>
       <Header />
       <main className="min-h-screen bg-gradient-to-b from-white via-orange-50/20 to-white">
-        {/* Hero Section with Payment Form */}
+        {/* Hero Section with Verification Form */}
         <section className="relative pt-24 pb-16 overflow-hidden">
           {/* Background Pattern */}
           <div className="absolute inset-0 bg-[url('/grid.svg')] bg-center [mask-image:linear-gradient(180deg,white,rgba(255,255,255,0))]" />

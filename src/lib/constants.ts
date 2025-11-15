@@ -10,12 +10,29 @@ export const CONFIG = {
   VERIFICATION_PACKAGE: process.env.NEXT_PUBLIC_VERIFICATION_PACKAGE || "0x...",
   ENCLAVE_ID: process.env.NEXT_PUBLIC_ENCLAVE_ID || "0x...",
 
+  // Seal Configuration for Encryption
+  SEAL_PACKAGE_ID: process.env.NEXT_PUBLIC_SEAL_PACKAGE_ID || "0x...", // Deploy Seal package and add ID
+  SEAL_ALLOWLIST_PACKAGE_ID: process.env.NEXT_PUBLIC_SEAL_ALLOWLIST_PACKAGE_ID || "0x...",
+  SEAL_SERVERS: [
+    "https://seal-server-1.walrus-testnet.walrus.space",
+    "https://seal-server-2.walrus-testnet.walrus.space"
+  ],
+
+  // Session key TTL (minutes)
+  SESSION_KEY_TTL: 10,
+
   // IPFS/Storage Gateway for fetching datasets (not storing)
   IPFS_GATEWAY: process.env.NEXT_PUBLIC_IPFS_GATEWAY || "https://ipfs.io/ipfs/",
 
-  // Walrus Config (though we're only storing hashes on-chain)
+  // Walrus Config for Encrypted Storage
   WALRUS_AGGREGATOR: "https://aggregator.walrus-testnet.walrus.space",
   WALRUS_PUBLISHER: "https://publisher.walrus-testnet.walrus.space",
+  WALRUS_EPOCHS: 5, // Number of epochs to store blobs
+
+  // Feature flags for gradual rollout
+  ENABLE_SEAL_ENCRYPTION: true, // Set to false to rollback to non-encrypted uploads
+  ENABLE_SESSION_KEY_PERSISTENCE: true,
+  ENABLE_INTEGRITY_VERIFICATION: true,
 } as const;
 
 // Dataset formats we support

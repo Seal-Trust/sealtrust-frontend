@@ -202,9 +202,9 @@ export default function AboutPage() {
                 </div>
 
                 <div>
-                  <h3 className="font-semibold text-orange-900 mb-2">Dataset Marketplaces</h3>
+                  <h3 className="font-semibold text-orange-900 mb-2">Dataset Integrity Verification</h3>
                   <p className="text-sm text-orange-800">
-                    Verify dataset authenticity before purchase. Prevent sellers from tampering with advertised data.
+                    Verify dataset authenticity and detect tampering. Ensure data hasn't been modified since verification timestamp.
                   </p>
                 </div>
 

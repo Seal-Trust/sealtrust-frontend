@@ -3,29 +3,29 @@ import "./globals.css";
 import { Providers } from "./providers";
 
 export const metadata: Metadata = {
-  title: "SeiPay - Instant Payments on Sei Network",
-  description: "Send and receive instant payments on Sei Network. Fast, secure, and easy to use payment platform.",
-  keywords: "sei, payments, blockchain, crypto, web3, seipay",
-  authors: [{ name: "SeiPay" }],
+  title: "TruthMarket - AI Dataset Verification Platform",
+  description: "Cryptographic verification and timestamping for AI training datasets. Powered by Sui, Walrus, and Nautilus TEE.",
+  keywords: "ai, dataset, verification, tee, blockchain, sui, walrus, nautilus, truthmarket, timestamp",
+  authors: [{ name: "TruthMarket" }],
   openGraph: {
-    title: "SeiPay - Instant Payments on Sei Network",
-    description: "Send and receive instant payments on Sei Network",
+    title: "TruthMarket - AI Dataset Verification Platform",
+    description: "Cryptographic verification and timestamping for AI training datasets",
     type: "website",
     locale: "en_US",
-    siteName: "SeiPay",
+    siteName: "TruthMarket",
   },
   twitter: {
     card: "summary_large_image",
-    title: "SeiPay - Instant Payments on Sei Network",
-    description: "Send and receive instant payments on Sei Network",
+    title: "TruthMarket - AI Dataset Verification Platform",
+    description: "Cryptographic verification and timestamping for AI training datasets",
   },
   icons: {
-    icon: "/seipay.png",
-    shortcut: "/seipay.png",
-    apple: "/seipay.png",
+    icon: "/truthmarket.png",
+    shortcut: "/truthmarket.png",
+    apple: "/truthmarket.png",
     other: {
       rel: "apple-touch-icon-precomposed",
-      url: "/seipay.png",
+      url: "/truthmarket.png",
     },
   },
 };

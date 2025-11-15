@@ -5,23 +5,28 @@ import Link from 'next/link';
 import { Header } from '@/components/layout/Header';
 import { DatasetReceipt } from '@/components/dataset-receipt';
 import { ArrowLeft, Database, Lightning, Shield, Clock, Upload } from '@phosphor-icons/react';
-import { useCurrentAccount } from '@mysten/dapp-kit';
+import { useCurrentAccount, useSignAndExecuteTransaction, useSuiClient } from '@mysten/dapp-kit';
 import { SuiWalletButton } from '@/components/wallet/SuiWalletButton';
-import { useNautilus } from '@/hooks/useNautilus';
-import { useTruthMarket } from '@/hooks/useTruthMarket';
 import { toast } from 'sonner';
 import QRCode from 'react-qr-code';
+import { Transaction } from '@mysten/sui/transactions';
+import { sealService } from '@/lib/seal-service';
+import { walrusService } from '@/lib/walrus-service';
+import { CONFIG } from '@/lib/constants';
+import { stringToVecU8, hexToVecU8, MetadataVerificationRequest } from '@/lib/types';
 
 export default function RegisterPage() {
   const currentAccount = useCurrentAccount();
+  const suiClient = useSuiClient();
+  const { mutateAsync: signAndExecuteTransaction } = useSignAndExecuteTransaction();
+
   const [datasetUrl, setDatasetUrl] = useState('');
+  const [description, setDescription] = useState('');
   const [format, setFormat] = useState('CSV');
   const [file, setFile] = useState<File | null>(null);
-  const [step, setStep] = useState<'input' | 'verifying' | 'registering' | 'complete'>('input');
+  const [step, setStep] = useState<'input' | 'hashing' | 'encrypting' | 'uploading' | 'verifying' | 'registering' | 'complete'>('input');
+  const [progress, setProgress] = useState('');
   const [receiptData, setReceiptData] = useState<any>(null);
-
-  const { verifyDataset, loading: nautilusLoading } = useNautilus();
-  const { registerDataset, loading: registerLoading } = useTruthMarket();
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
@@ -31,66 +36,153 @@ export default function RegisterPage() {
     }
   };
 
-  const handleVerifyWithNautilus = async () => {
-    if (!datasetUrl && !file) {
-      toast.error('Please provide a dataset URL or upload a file');
+  // V3 Architecture: Complete registration flow
+  const handleRegisterDataset = async () => {
+    if (!file) {
+      toast.error('Please upload a file');
       return;
     }
 
-    setStep('verifying');
-    try {
-      const result = await verifyDataset({
-        datasetUrl: datasetUrl || `file://${file?.name}`,
-        format,
-      });
-
-      if (result) {
-        toast.success('Dataset verified by Nautilus TEE!');
-        // Automatically proceed to registration
-        await handleRegisterOnChain(result);
-      }
-    } catch (error: any) {
-      toast.error(error.message || 'Verification failed');
-      setStep('input');
-    }
-  };
-
-  const handleRegisterOnChain = async (verificationData: any) => {
     if (!currentAccount) {
       toast.error('Please connect your wallet');
-      setStep('input');
       return;
     }
 
-    setStep('registering');
     try {
-      const result = await registerDataset({
-        datasetUrl: datasetUrl || `file://${file?.name}`,
-        hash: verificationData.hash,
-        signature: verificationData.signature,
-        format,
+      // Step 1: Hash file BEFORE encryption (CRITICAL!)
+      setStep('hashing');
+      setProgress('Computing hash of original file...');
+      const originalHash = await sealService.hashFile(file);
+      console.log('✅ Original hash:', originalHash);
+
+      // Step 2: Encrypt with Seal
+      setStep('encrypting');
+      setProgress('Encrypting dataset with Seal...');
+      const { encryptedData, policyId } = await sealService.encryptDataset(
+        file,
+        CONFIG.SEAL_PACKAGE_ID
+      );
+      console.log('✅ Encrypted. Policy ID:', policyId);
+
+      // Step 3: Upload encrypted blob to Walrus
+      setStep('uploading');
+      setProgress('Uploading encrypted blob to Walrus...');
+      const { blobId } = await walrusService.uploadToWalrus(
+        new File([encryptedData], `${file.name}.encrypted`, { type: 'application/octet-stream' }),
+        CONFIG.WALRUS_EPOCHS
+      );
+      console.log('✅ Uploaded to Walrus. Blob ID:', blobId);
+
+      // Step 4: Prepare metadata for Nautilus verification
+      setStep('verifying');
+      setProgress('Sending metadata to Nautilus TEE for verification...');
+
+      const timestamp = Date.now();
+      const metadata = {
+        dataset_id: stringToVecU8(crypto.randomUUID()),
+        name: stringToVecU8(file.name),
+        description: stringToVecU8(description || 'Dataset registered via TruthMarket'),
+        format: stringToVecU8(file.type || format),
+        size: file.size,
+        original_hash: stringToVecU8(originalHash),
+        walrus_blob_id: stringToVecU8(blobId),
+        seal_policy_id: stringToVecU8(policyId),
+        timestamp,
+        uploader: stringToVecU8(currentAccount.address),
+      };
+
+      const nautilusRequest: MetadataVerificationRequest = { metadata };
+
+      const nautilusResponse = await fetch(`${CONFIG.NAUTILUS_URL}/verify_metadata`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(nautilusRequest),
       });
 
-      if (result) {
-        setReceiptData({
-          datasetUrl: datasetUrl || `file://${file?.name}`,
-          hash: verificationData.hash,
-          timestamp: Date.now(),
-          txId: result.txId,
-          nftId: result.nftId,
-          registrant: currentAccount.address,
-          format,
-        });
-        setStep('complete');
-        toast.success('Dataset registered on-chain!');
+      if (!nautilusResponse.ok) {
+        const error = await nautilusResponse.json();
+        throw new Error(`Nautilus verification failed: ${error.error || nautilusResponse.statusText}`);
       }
+
+      const attestation = await nautilusResponse.json();
+      console.log('✅ Nautilus attestation received');
+
+      // Step 5: Register on-chain
+      setStep('registering');
+      setProgress('Registering dataset on Sui blockchain...');
+
+      const tx = new Transaction();
+
+      // Compute metadata hash (for DatasetNFT.metadata_hash field)
+      const metadataString = JSON.stringify(metadata);
+      const metadataHash = await sealService.hashData(new TextEncoder().encode(metadataString));
+
+      // Convert signature from hex to bytes (Nautilus returns hex-encoded)
+      const signatureBytes = hexToVecU8(attestation.signature);
+
+      tx.moveCall({
+        target: `${CONFIG.VERIFICATION_PACKAGE}::truthmarket::register_dataset_dev`,
+        typeArguments: [`${CONFIG.VERIFICATION_PACKAGE}::truthmarket::TRUTHMARKET`],
+        arguments: [
+          tx.pure.vector('u8', metadata.name),
+          tx.pure.vector('u8', metadata.format),
+          tx.pure.u64(metadata.size),
+          tx.pure.vector('u8', metadata.original_hash),
+          tx.pure.vector('u8', stringToVecU8(metadataHash)),
+          tx.pure.string(blobId),
+          tx.pure.string(policyId),
+          tx.pure.u64(timestamp),
+          tx.pure.vector('u8', signatureBytes),
+          tx.object(CONFIG.ENCLAVE_ID),
+        ],
+      });
+
+      tx.setGasBudget(100_000_000);
+
+      const result = await signAndExecuteTransaction({
+        transaction: tx,
+        chain: 'sui:testnet',
+      });
+
+      console.log('✅ Transaction successful:', result.digest);
+
+      // Get NFT ID from transaction
+      const txResponse = await suiClient.getTransactionBlock({
+        digest: result.digest,
+        options: { showObjectChanges: true },
+      });
+
+      const createdNFT = txResponse.objectChanges?.find(
+        (change: any) => change.type === 'created' && change.objectType?.includes('DatasetNFT')
+      );
+
+      const nftId = (createdNFT as any)?.objectId || '';
+
+      // Success!
+      setStep('complete');
+      setReceiptData({
+        datasetUrl: datasetUrl || `file://${file.name}`,
+        hash: originalHash,
+        blobId,
+        policyId,
+        timestamp,
+        txId: result.digest,
+        nftId,
+        registrant: currentAccount.address,
+        format: file.type || format,
+      });
+
+      toast.success('Dataset registered successfully! 🎉');
+
     } catch (error: any) {
+      console.error('Registration failed:', error);
       toast.error(error.message || 'Registration failed');
       setStep('input');
+      setProgress('');
     }
   };
 
-  const isLoading = nautilusLoading || registerLoading;
+  const isLoading = step !== 'input' && step !== 'complete';
 
   return (
     <>
@@ -257,6 +349,21 @@ export default function RegisterPage() {
                       </p>
                     </div>
 
+                    {/* Description Input */}
+                    <div>
+                      <label className="text-sm font-medium text-foreground mb-2 block">
+                        Description (Optional)
+                      </label>
+                      <textarea
+                        placeholder="Brief description of your dataset..."
+                        value={description}
+                        onChange={(e) => setDescription(e.target.value)}
+                        disabled={isLoading}
+                        rows={3}
+                        className="w-full px-4 py-3 rounded-xl bg-white border border-border focus:outline-none focus:border-primary transition-colors disabled:opacity-50 resize-none"
+                      />
+                    </div>
+
                     {/* Format Selector */}
                     <div>
                       <label className="text-sm font-medium text-foreground mb-2 block">
@@ -276,6 +383,30 @@ export default function RegisterPage() {
                     </div>
 
                     {/* Status Messages */}
+                    {step === 'hashing' && (
+                      <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
+                        <p className="text-sm text-blue-900">
+                          Computing hash of original file...
+                        </p>
+                      </div>
+                    )}
+
+                    {step === 'encrypting' && (
+                      <div className="bg-purple-50 border border-purple-200 rounded-xl p-4">
+                        <p className="text-sm text-purple-900">
+                          Encrypting dataset with Seal...
+                        </p>
+                      </div>
+                    )}
+
+                    {step === 'uploading' && (
+                      <div className="bg-green-50 border border-green-200 rounded-xl p-4">
+                        <p className="text-sm text-green-900">
+                          Uploading encrypted blob to Walrus...
+                        </p>
+                      </div>
+                    )}
+
                     {step === 'verifying' && (
                       <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
                         <p className="text-sm text-blue-900">
@@ -302,8 +433,8 @@ export default function RegisterPage() {
                       </div>
                     ) : (
                       <button
-                        onClick={handleVerifyWithNautilus}
-                        disabled={isLoading || (!datasetUrl && !file)}
+                        onClick={handleRegisterDataset}
+                        disabled={isLoading || !file}
                         className="w-full px-6 py-3 rounded-xl gradient-primary text-white font-semibold hover:shadow-lg hover:scale-105 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
                       >
                         {isLoading

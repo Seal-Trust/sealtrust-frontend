@@ -13,13 +13,19 @@ export interface ProcessDataRequest {
   payload: DatasetRequest;
 }
 
-// Dataset verification data (matches Move struct exactly)
+// Dataset verification data V3 (matches Move struct EXACTLY - CRITICAL!)
+// This MUST match truthmarket.move line 40-51 and nautilus-app/src/lib.rs line 62-73
 export interface DatasetVerification {
-  dataset_hash: number[]; // Vec<u8> in Rust/Move
-  dataset_url: number[]; // Vec<u8> in Rust/Move
-  format: number[]; // Vec<u8> in Rust/Move
-  schema_version: number[]; // Vec<u8> in Rust/Move
-  verification_timestamp: number; // u64
+  dataset_id: number[];          // Vec<u8> - Unique dataset ID
+  name: number[];                // Vec<u8> - Dataset name
+  description: number[];         // Vec<u8> - Dataset description
+  format: number[];              // Vec<u8> - File format
+  size: number;                  // u64 - File size in bytes
+  original_hash: number[];       // Vec<u8> - Hash of UNENCRYPTED file (CRITICAL!)
+  walrus_blob_id: number[];      // Vec<u8> - Walrus storage ID
+  seal_policy_id: number[];      // Vec<u8> - Seal access policy ID
+  timestamp: number;             // u64 - Verification timestamp
+  uploader: number[];            // Vec<u8> - Uploader address
 }
 
 // Intent message wrapper (matches Nautilus common)
@@ -35,16 +41,33 @@ export interface ProcessedDataResponse {
   signature: string; // Hex encoded signature
 }
 
-// DatasetNFT on-chain (from Move contract)
+// DatasetNFT on-chain V3 (from Move contract)
+// This MUST match truthmarket.move line 13-37
 export interface DatasetNFT {
   id: string;
-  dataset_hash: string; // Hex string
-  dataset_url: string;
-  format: string;
-  schema_version: string;
-  verification_timestamp: number;
-  enclave_id: string;
-  owner?: string;
+
+  // Core verification data
+  original_hash: string;         // Hex string - Hash of UNENCRYPTED file
+  metadata_hash: string;         // Hex string - Hash of metadata struct
+
+  // Storage references (CRITICAL for V3!)
+  walrus_blob_id: string;        // Where encrypted blob is stored
+  seal_policy_id: string;        // Access control policy ID
+
+  // Metadata
+  name: string;                  // Dataset name
+  dataset_url: string;           // Original URL (optional)
+  format: string;                // File format
+  size: number;                  // File size in bytes
+  schema_version: string;        // Schema version
+
+  // Verification proof
+  verification_timestamp: number; // Timestamp in milliseconds
+  enclave_id: string;            // Enclave that verified
+  tee_signature: string;         // Hex encoded TEE signature
+
+  // Ownership
+  owner: string;                 // Owner address
 }
 
 // Registry entry for explorer
@@ -105,4 +128,26 @@ export interface NautilusError {
   error: string;
   code?: string;
   details?: any;
+}
+
+// V3 Architecture: Metadata verification request (NEW!)
+export interface MetadataVerificationRequest {
+  metadata: DatasetVerification;
+}
+
+// Helper type for converting between string and number[] (Vec<u8>)
+export function stringToVecU8(str: string): number[] {
+  return Array.from(new TextEncoder().encode(str));
+}
+
+export function vecU8ToString(vec: number[]): string {
+  return new TextDecoder().decode(new Uint8Array(vec));
+}
+
+export function hexToVecU8(hex: string): number[] {
+  const bytes: number[] = [];
+  for (let i = 0; i < hex.length; i += 2) {
+    bytes.push(parseInt(hex.substring(i, i + 2), 16));
+  }
+  return bytes;
 }
