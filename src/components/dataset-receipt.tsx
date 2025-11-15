@@ -262,10 +262,10 @@ export function DatasetReceipt({
       {/* QR Code */}
       <div className="pt-6 border-t border-gray-200">
         <h3 className="font-semibold mb-4 text-center">Verification QR Code</h3>
-        <div className="flex justify-center bg-white p-4 rounded-lg border border-gray-200">
+        <div className="flex justify-center bg-white p-3 rounded-lg border border-gray-200">
           <QRCode
             value={receiptUrl}
-            size={200}
+            size={140}
           />
         </div>
         <p className="text-xs text-center text-gray-500 mt-2">

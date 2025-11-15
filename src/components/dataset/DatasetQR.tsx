@@ -40,12 +40,12 @@ export function DatasetQR({ hash, datasetName, timestamp }: DatasetQRProps) {
       {/* QR Code Container */}
       <div
         ref={qrRef}
-        className="bg-white p-8 rounded-2xl shadow-inner border border-gray-100"
+        className="bg-white p-4 rounded-2xl shadow-inner border border-gray-100 mx-auto max-w-[200px]"
       >
         <div className="aspect-square">
           <QRCode
             value={qrValue}
-            size={256}
+            size={160}
             style={{ width: '100%', height: '100%' }}
             level="H"
             fgColor="#09090b"
