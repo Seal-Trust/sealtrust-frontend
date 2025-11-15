@@ -1,0 +1,53 @@
+{
+  "name": "truthmarket",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint",
+    "test": "vitest",
+    "test:ui": "vitest --ui",
+    "test:coverage": "vitest --coverage"
+  },
+  "dependencies": {
+    "@fontsource-variable/inter": "^5.2.6",
+    "@fontsource-variable/jetbrains-mono": "^5.2.6",
+    "@mysten/dapp-kit": "^0.14.37",
+    "@mysten/seal": "^0.9.4",
+    "@mysten/sui": "^1.18.0",
+    "@mysten/walrus": "^0.8.4",
+    "@phosphor-icons/react": "^2.1.10",
+    "@tanstack/react-query": "^5.85.5",
+    "clsx": "^2.1.1",
+    "html-to-image": "^1.11.11",
+    "idb-keyval": "^6.2.2",
+    "lottie-react": "^2.4.1",
+    "lucide-react": "^0.541.0",
+    "next": "15.5.0",
+    "react": "19.1.0",
+    "react-dom": "19.1.0",
+    "react-hot-toast": "^2.4.1",
+    "react-qr-code": "^2.0.18",
+    "sonner": "^2.0.7",
+    "tailwind-merge": "^3.3.1"
+  },
+  "devDependencies": {
+    "@eslint/eslintrc": "^3",
+    "@tailwindcss/postcss": "^4",
+    "@testing-library/jest-dom": "^6.8.0",
+    "@testing-library/react": "^16.3.0",
+    "@testing-library/user-event": "^14.6.1",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "@vitejs/plugin-react": "^5.0.1",
+    "eslint": "^9",
+    "eslint-config-next": "15.5.0",
+    "jsdom": "^26.1.0",
+    "tailwindcss": "^4",
+    "typescript": "^5",
+    "vitest": "^3.2.4"
+  }
+}
