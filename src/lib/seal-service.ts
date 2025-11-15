@@ -1,19 +1,58 @@
 import { SealClient, SessionKey } from '@mysten/seal';
 import { get, set } from 'idb-keyval';
-import { SuiClient } from '@mysten/sui/client';
+import { SuiClient, getFullnodeUrl } from '@mysten/sui/client';
+import { fromHex, toHex } from '@mysten/sui/utils';
 
-const SEAL_SERVERS = [
-  "https://seal-server-1.walrus-testnet.walrus.space",
-  "https://seal-server-2.walrus-testnet.walrus.space"
+// Official Seal Testnet Key Servers (as of 2025)
+// Verified providers: Mysten Labs, Ruby Nodes, NodeInfra, Overclock, H2O Nodes
+const TESTNET_KEY_SERVERS = [
+  '0x73d05d62c18d9374e3ea529e8e0ed6161da1a141a94d3f76ae3fe4e99356db75', // mysten-testnet-1
+  '0xf5d14a81a982144ae441cd7d64b09027f116a468bd36e7eca494f750591623c8', // mysten-testnet-2
+  '0x6068c0acb197dddbacd4746a9de7f025b2ed5a5b6c1b1ab44dade4426d141da2', // Ruby Nodes
+  '0x5466b7df5c15b508678d51496ada8afab0d6f70a01c10613123382b1b8131007', // NodeInfra
+  '0x9c949e53c36ab7a9c484ed9e8b43267a77d4b8d70e79aa6b39042e3d4c434105', // Overclock
+  '0x39cef09b24b667bc6ed54f7159d82352fe2d5dd97ca9a5beaa1d21aa774f25a2', // H2O Nodes
 ];
 
 export class SealService {
-  private client: SealClient;
+  private client: SealClient | null = null;
+  private suiClient: SuiClient | null = null;
 
-  constructor() {
+  /**
+   * Initialize the SealClient with testnet key servers
+   * Must be called before using encrypt/decrypt operations
+   *
+   * NOTE: We create a fresh SuiClient instance instead of using the dapp-kit client
+   * because SealClient requires a client with experimental core extensions
+   */
+  async initialize(): Promise<void> {
+    if (this.client) {
+      // Already initialized
+      return;
+    }
+
+    // Create a fresh SuiClient instance compatible with Seal
+    // This is the same pattern used in Seal's integration tests
+    this.suiClient = new SuiClient({ url: getFullnodeUrl('testnet') });
+
+    console.log('🔐 Initializing Seal with', TESTNET_KEY_SERVERS.length, 'key servers');
+
     this.client = new SealClient({
-      sealServerUrls: SEAL_SERVERS
+      suiClient: this.suiClient,
+      serverConfigs: TESTNET_KEY_SERVERS.map(objectId => ({
+        objectId,
+        weight: 1, // Equal weight for all servers
+      })),
+      verifyKeyServers: false, // Disable verification to avoid network issues
+      timeout: 10000, // 10 second timeout
     });
+  }
+
+  private getClient(): SealClient {
+    if (!this.client) {
+      throw new Error('SealService not initialized. Call initialize(suiClient) first.');
+    }
+    return this.client;
   }
 
   /**
@@ -63,16 +102,17 @@ export class SealService {
     const originalHash = await this.hashFile(file);
     console.log('Original file hash (before encryption):', originalHash);
 
-    // 3. Generate unique policy ID for this dataset
-    const policyId = crypto.randomUUID();
-    console.log('Generated Seal policy ID:', policyId);
+    // 3. Generate unique policy ID for this dataset (hex format required by Seal)
+    const nonce = crypto.getRandomValues(new Uint8Array(16)); // 128-bit random ID
+    const policyId = toHex(nonce);
+    console.log('Generated Seal policy ID (hex):', policyId);
 
     // 4. Encrypt with Seal
     console.log('Encrypting dataset with Seal...');
-    const encrypted = await this.client.encrypt({
+    const encrypted = await this.getClient().encrypt({
       threshold: 2,
-      packageId,
-      id: policyId,
+      packageId,  // Keep as hex string
+      id: policyId,  // Keep as hex string
       data: new Uint8Array(fileBuffer),
     });
 
@@ -168,7 +208,7 @@ export class SealService {
     txBytes: Uint8Array
   ): Promise<Uint8Array> {
     console.log('Decrypting dataset with Seal...');
-    const decrypted = await this.client.decrypt({
+    const decrypted = await this.getClient().decrypt({
       data: encryptedData,
       sessionKey,
       txBytes
@@ -223,7 +263,7 @@ export class SealService {
     tx.moveCall({
       target: `${allowlistPackageId}::allowlist::seal_approve`,
       arguments: [
-        tx.object(policyId),
+        tx.pure.vector('u8', fromHex(policyId)),  // Pass encryption ID as bytes vector
         tx.pure.address(address),
       ],
     });

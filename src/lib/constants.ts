@@ -11,8 +11,10 @@ export const CONFIG = {
   ENCLAVE_ID: process.env.NEXT_PUBLIC_ENCLAVE_ID || "0x...",
 
   // Seal Configuration for Encryption
-  SEAL_PACKAGE_ID: process.env.NEXT_PUBLIC_SEAL_PACKAGE_ID || "0x...", // Deploy Seal package and add ID
-  SEAL_ALLOWLIST_PACKAGE_ID: process.env.NEXT_PUBLIC_SEAL_ALLOWLIST_PACKAGE_ID || "0x...",
+  // Official Seal allowlist package deployed on testnet (from Seal examples)
+  // This includes the seal_approve functions for access control
+  SEAL_PACKAGE_ID: process.env.NEXT_PUBLIC_SEAL_PACKAGE_ID || "0xc5ce2742cac46421b62028557f1d7aea8a4c50f651379a79afdf12cd88628807",
+  SEAL_ALLOWLIST_PACKAGE_ID: process.env.NEXT_PUBLIC_SEAL_ALLOWLIST_PACKAGE_ID || "0xc5ce2742cac46421b62028557f1d7aea8a4c50f651379a79afdf12cd88628807",
   SEAL_SERVERS: [
     "https://seal-server-1.walrus-testnet.walrus.space",
     "https://seal-server-2.walrus-testnet.walrus.space"
@@ -29,10 +31,17 @@ export const CONFIG = {
   WALRUS_PUBLISHER: "https://publisher.walrus-testnet.walrus.space",
   WALRUS_EPOCHS: 5, // Number of epochs to store blobs
 
+  // File Upload Limits
+  MAX_FILE_SIZE: 100 * 1024 * 1024, // 100MB - matches API route limit
+  MAX_FILE_SIZE_MB: 100,
+  URL_FETCH_TIMEOUT: 60000, // 60 seconds for URL downloads
+  UPLOAD_TIMEOUT: 120000, // 2 minutes for file uploads
+
   // Feature flags for gradual rollout
   ENABLE_SEAL_ENCRYPTION: true, // Set to false to rollback to non-encrypted uploads
   ENABLE_SESSION_KEY_PERSISTENCE: true,
   ENABLE_INTEGRITY_VERIFICATION: true,
+  ENABLE_URL_DATASETS: true, // Enable fetching datasets from URLs
 } as const;
 
 // Dataset formats we support
@@ -65,6 +74,11 @@ export const ERROR_MESSAGES = {
   HASH_MISMATCH: "Dataset hash does not match expected value",
   NOT_FOUND: "Dataset not found in registry",
   NETWORK_ERROR: "Network error. Please check your connection",
+  FILE_TOO_LARGE: "File exceeds maximum size limit",
+  URL_FETCH_FAILED: "Failed to fetch dataset from URL",
+  UNSUPPORTED_DOMAIN: "Domain not in allowlist",
+  DOWNLOAD_CANCELLED: "Download was cancelled",
+  NO_FILE_OR_URL: "Please provide a file or dataset URL",
 } as const;
 
 // Transaction gas budget
