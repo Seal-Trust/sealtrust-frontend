@@ -28,6 +28,8 @@ interface ReceiptData {
   nftId: string;
   registrant: string;
   format: string;
+  allowlistId?: string;
+  allowlistCapId?: string;
 }
 
 export default function RegisterPage() {
@@ -302,6 +304,8 @@ export default function RegisterPage() {
         nftId,
         registrant: currentAccount.address,
         format: datasetFile.type || format,
+        allowlistId: cachedResults.allowlistId,
+        allowlistCapId: cachedResults.allowlistCapId,
       });
 
       // Clear cache on success

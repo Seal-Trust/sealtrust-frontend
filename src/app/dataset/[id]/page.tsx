@@ -24,17 +24,24 @@ import { useTruthMarket } from '@/hooks/useTruthMarket';
 import { DatasetNFT } from '@/lib/types';
 import { walrusService } from '@/lib/walrus-service';
 import { DatasetDownload } from '@/components/dataset/DatasetDownload';
+import { AccessManagement } from '@/components/dataset/AccessManagement';
+import { useCurrentAccount, useSuiClient } from '@mysten/dapp-kit';
 import { toast } from 'sonner';
+import { CONFIG } from '@/lib/constants';
 
 export default function DatasetDetailPage() {
   const params = useParams();
   const nftId = params.id as string;
   const { getDatasetDetails } = useTruthMarket();
+  const currentAccount = useCurrentAccount();
+  const suiClient = useSuiClient();
 
   const [dataset, setDataset] = useState<DatasetNFT | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [showDownloadModal, setShowDownloadModal] = useState(false);
+  const [capId, setCapId] = useState<string | null>(null);
+  const [capLoading, setCapLoading] = useState(false);
 
   // Fetch dataset details on mount
   useEffect(() => {
@@ -57,6 +64,58 @@ export default function DatasetDetailPage() {
       fetchDataset();
     }
   }, [nftId, getDatasetDetails]);
+
+  // Discover Cap ID when user owns the dataset
+  useEffect(() => {
+    const discoverCap = async () => {
+      // Only discover if:
+      // 1. Dataset is loaded
+      // 2. Dataset has an allowlist
+      // 3. User is connected and owns the dataset
+      if (!dataset || !dataset.seal_allowlist_id || !currentAccount || currentAccount.address !== dataset.owner) {
+        return;
+      }
+
+      setCapLoading(true);
+      try {
+        // Query for Cap objects owned by the user
+        const capStructType = `${CONFIG.SEAL_ALLOWLIST_PACKAGE_ID}::allowlist::Cap`;
+
+        const ownedObjects = await suiClient.getOwnedObjects({
+          owner: currentAccount.address,
+          filter: {
+            StructType: capStructType,
+          },
+          options: {
+            showContent: true,
+          },
+        });
+
+        // Find Cap that matches this dataset's allowlist
+        for (const obj of ownedObjects.data) {
+          if (obj.data && 'content' in obj.data && obj.data.content) {
+            const content = obj.data.content as any;
+            if (content.dataType === 'moveObject' && content.fields) {
+              // Check if this Cap's allowlist_id matches the dataset's seal_allowlist_id
+              if (content.fields.allowlist_id === dataset.seal_allowlist_id) {
+                setCapId(obj.data.objectId);
+                console.log('✅ Found Cap ID:', obj.data.objectId);
+                return;
+              }
+            }
+          }
+        }
+
+        console.warn('⚠️ Cap not found for this dataset');
+      } catch (err) {
+        console.error('Failed to discover Cap:', err);
+      } finally {
+        setCapLoading(false);
+      }
+    };
+
+    discoverCap();
+  }, [dataset, currentAccount, suiClient]);
 
   const handleCopyLink = () => {
     const url = window.location.href;
@@ -386,6 +445,40 @@ export default function DatasetDetailPage() {
               </div>
             </div>
           </div>
+
+          {/* Access Management Section - Only for Dataset Owner */}
+          {currentAccount &&
+           dataset &&
+           currentAccount.address === dataset.owner &&
+           dataset.seal_allowlist_id && (
+            <div className="mt-6">
+              {capLoading ? (
+                <div className="bg-white rounded-lg border border-gray-200 p-8 text-center">
+                  <CircleNotch weight="bold" size={32} className="animate-spin text-orange-500 mx-auto mb-3" />
+                  <p className="text-sm text-gray-600">Discovering access control...</p>
+                </div>
+              ) : capId ? (
+                <AccessManagement
+                  allowlistId={dataset.seal_allowlist_id}
+                  capId={capId}
+                  ownerAddress={dataset.owner}
+                />
+              ) : (
+                <div className="bg-orange-50 border border-orange-200 rounded-lg p-6">
+                  <div className="flex items-start gap-3">
+                    <Warning weight="duotone" size={24} className="text-orange-600 flex-shrink-0 mt-1" />
+                    <div>
+                      <p className="font-semibold text-orange-900 mb-1">Access Management Unavailable</p>
+                      <p className="text-sm text-orange-800">
+                        Unable to find the Admin Cap for this dataset. You may have transferred it to another wallet.
+                        The Cap ID is required to manage access controls.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Security Notice */}
           <div className="bg-blue-50 border border-blue-200 rounded-2xl p-6 mt-6">

@@ -15,6 +15,8 @@ interface DatasetReceiptProps {
   txId: string;
   nftId: string;
   registrant: string;
+  allowlistId?: string;
+  allowlistCapId?: string;
   format?: string;
   schemaVersion?: string;
   onClose?: () => void;
@@ -29,6 +31,8 @@ export function DatasetReceipt({
   txId,
   nftId,
   registrant,
+  allowlistId,
+  allowlistCapId,
   format = "CSV",
   schemaVersion = "v1.0",
   onClose
@@ -145,6 +149,40 @@ export function DatasetReceipt({
               <p className="text-xs text-gray-600 font-mono truncate">{policyId}</p>
             </div>
           </div>
+
+          {/* Access Control IDs - CRITICAL SECTION */}
+          {allowlistId && allowlistCapId && (
+            <div className="p-4 bg-orange-50 border-2 border-orange-200 rounded-lg space-y-3">
+              <div className="flex items-start gap-2">
+                <div className="flex-shrink-0 w-5 h-5 rounded-full bg-orange-500 flex items-center justify-center mt-0.5">
+                  <span className="text-white text-xs font-bold">!</span>
+                </div>
+                <div className="flex-1">
+                  <p className="text-xs font-semibold text-orange-900 mb-1">
+                    IMPORTANT: Save These Access Control IDs
+                  </p>
+                  <p className="text-xs text-orange-700 leading-relaxed">
+                    You need the Cap ID below to manage who can access your dataset. Save it now - you won't see it again!
+                  </p>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <div>
+                  <p className="text-xs text-orange-700 mb-1 font-medium">Allowlist ID</p>
+                  <p className="text-xs text-orange-900 font-mono break-all bg-white px-2 py-1.5 rounded border border-orange-200">
+                    {allowlistId}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs text-orange-700 mb-1 font-medium">Admin Cap ID (Required for Access Management)</p>
+                  <p className="text-xs text-orange-900 font-mono break-all bg-white px-2 py-1.5 rounded border border-orange-200">
+                    {allowlistCapId}
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Grid of Details */}
           <div className="grid grid-cols-2 gap-4 pt-4 border-t border-gray-100">
