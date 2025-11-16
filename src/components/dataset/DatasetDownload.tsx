@@ -14,6 +14,7 @@ interface DatasetDownloadProps {
   datasetName: string;
   walrusBlobId: string;
   sealPolicyId: string;
+  sealAllowlistId: string | null;  // Can be null for old datasets
   originalHash: string;
   format: string;
 }
@@ -24,6 +25,7 @@ export function DatasetDownload({
   datasetName,
   walrusBlobId,
   sealPolicyId,
+  sealAllowlistId,
   originalHash,
   format,
 }: DatasetDownloadProps) {
@@ -44,6 +46,11 @@ export function DatasetDownload({
       return;
     }
 
+    if (!sealAllowlistId) {
+      toast.error('This dataset does not have an allowlist configured. Please contact the dataset owner.');
+      return;
+    }
+
     try {
       // Step 1: Download encrypted blob from Walrus
       setStep('downloading');
@@ -57,6 +64,7 @@ export function DatasetDownload({
       const decrypted = await sealService.downloadAndDecryptDataset(
         encryptedArrayBuffer,
         sealPolicyId,
+        sealAllowlistId,
         CONFIG.SEAL_PACKAGE_ID,
         CONFIG.SEAL_ALLOWLIST_PACKAGE_ID,
         currentAccount.address,
@@ -85,12 +93,13 @@ export function DatasetDownload({
       setProgress('');
       toast.success('Dataset decrypted and verified! 🎉');
 
-    } catch (err: any) {
+    } catch (err) {
       console.error('Download/decrypt failed:', err);
-      setError(err.message || 'Failed to download dataset');
+      const errorMessage = err instanceof Error ? err.message : 'Failed to download dataset';
+      setError(errorMessage);
       setStep('error');
       setProgress('');
-      toast.error(err.message || 'Download failed');
+      toast.error(errorMessage);
     }
   };
 

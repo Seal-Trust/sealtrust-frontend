@@ -7,7 +7,6 @@ import { Header } from '@/components/layout/Header';
 import { WorldMapAnimation } from '@/components/animations/WorldMapAnimation';
 import {
   ArrowRight,
-  Shield,
   CheckCircle,
   Clock,
   ShieldCheck,

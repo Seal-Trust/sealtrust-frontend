@@ -169,7 +169,7 @@ export function useTruthMarket() {
 
             if (objectResponse.data?.content) {
               const content = objectResponse.data.content as any;
-              const nftHash = bytesToHex(content.fields.dataset_hash || []);
+              const nftHash = bytesToHex(content.fields.original_hash || []);
 
               // Check if this NFT's hash matches
               if (nftHash === hash) {
@@ -177,12 +177,18 @@ export function useTruthMarket() {
 
                 const dataset: DatasetNFT = {
                   id: (change as any).objectId,
-                  dataset_hash: hash,
-                  dataset_url: bytesToString(content.fields.dataset_url || []),
+                  original_hash: hash,
+                  metadata_hash: bytesToHex(content.fields.metadata_hash || []),
+                  walrus_blob_id: content.fields.walrus_blob_id || "",
+                  seal_policy_id: content.fields.seal_policy_id || "",
+                  name: content.fields.name || "",
+                  dataset_url: content.fields.dataset_url || "",
                   format: content.fields.format || "",
+                  size: parseInt(content.fields.size || "0"),
                   schema_version: content.fields.schema_version || "",
                   verification_timestamp: parseInt(content.fields.verification_timestamp || "0"),
                   enclave_id: content.fields.enclave_id || "",
+                  tee_signature: bytesToHex(content.fields.tee_signature || []),
                   owner: owner?.AddressOwner || "",
                 };
 
@@ -262,12 +268,18 @@ export function useTruthMarket() {
 
               const nft: DatasetNFT = {
                 id: (change as any).objectId,
-                dataset_hash: bytesToHex(content.fields.dataset_hash || []),
-                dataset_url: bytesToString(content.fields.dataset_url || []),
+                original_hash: bytesToHex(content.fields.original_hash || []),
+                metadata_hash: bytesToHex(content.fields.metadata_hash || []),
+                walrus_blob_id: content.fields.walrus_blob_id || "",
+                seal_policy_id: content.fields.seal_policy_id || "",
+                name: content.fields.name || "",
+                dataset_url: content.fields.dataset_url || "",
                 format: content.fields.format || "",
+                size: parseInt(content.fields.size || "0"),
                 schema_version: content.fields.schema_version || "",
                 verification_timestamp: parseInt(content.fields.verification_timestamp || "0"),
                 enclave_id: content.fields.enclave_id || "",
+                tee_signature: bytesToHex(content.fields.tee_signature || []),
                 owner: owner?.AddressOwner || "",
               };
 
@@ -316,12 +328,18 @@ export function useTruthMarket() {
 
           const nft: DatasetNFT = {
             id: obj.data.objectId,
-            dataset_hash: bytesToHex(content.fields.dataset_hash || []),
-            dataset_url: bytesToString(content.fields.dataset_url || []),
+            original_hash: bytesToHex(content.fields.original_hash || []),
+            metadata_hash: bytesToHex(content.fields.metadata_hash || []),
+            walrus_blob_id: content.fields.walrus_blob_id || "",
+            seal_policy_id: content.fields.seal_policy_id || "",
+            name: content.fields.name || "",
+            dataset_url: content.fields.dataset_url || "",
             format: content.fields.format || "",
+            size: parseInt(content.fields.size || "0"),
             schema_version: content.fields.schema_version || "",
             verification_timestamp: parseInt(content.fields.verification_timestamp || "0"),
             enclave_id: content.fields.enclave_id || "",
+            tee_signature: bytesToHex(content.fields.tee_signature || []),
             owner: address,
           };
 
@@ -363,12 +381,18 @@ export function useTruthMarket() {
 
         return {
           id: nftId,
-          dataset_hash: bytesToHex(content.fields.dataset_hash || []),
-          dataset_url: bytesToString(content.fields.dataset_url || []),
+          original_hash: bytesToHex(content.fields.original_hash || []),
+          metadata_hash: bytesToHex(content.fields.metadata_hash || []),
+          walrus_blob_id: content.fields.walrus_blob_id || "",
+          seal_policy_id: content.fields.seal_policy_id || "",
+          name: content.fields.name || "",
+          dataset_url: content.fields.dataset_url || "",
           format: content.fields.format || "",
+          size: parseInt(content.fields.size || "0"),
           schema_version: content.fields.schema_version || "",
           verification_timestamp: parseInt(content.fields.verification_timestamp || "0"),
           enclave_id: content.fields.enclave_id || "",
+          tee_signature: bytesToHex(content.fields.tee_signature || []),
           owner: owner?.AddressOwner || "",
         };
       }

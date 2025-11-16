@@ -18,12 +18,23 @@ export async function computeFileHash(file: File): Promise<HashResult> {
 
 /**
  * Compute SHA256 hash from URL by fetching content
+ * Uses Next.js API proxy to bypass CORS and CSP restrictions
  */
 export async function computeUrlHash(url: string): Promise<HashResult> {
-  const response = await fetch(url);
+  // Use Next.js API proxy to fetch the URL server-side
+  // This bypasses CSP restrictions (which only apply to browser fetch)
+  const proxyUrl = `/api/fetch-dataset?url=${encodeURIComponent(url)}`;
+
+  const response = await fetch(proxyUrl);
 
   if (!response.ok) {
-    throw new Error(`Failed to fetch dataset: ${response.statusText}`);
+    // Try to get error details from the proxy
+    try {
+      const errorData = await response.json();
+      throw new Error(errorData.error || `Failed to fetch dataset: ${response.statusText}`);
+    } catch {
+      throw new Error(`Failed to fetch dataset: ${response.statusText}`);
+    }
   }
 
   const buffer = await response.arrayBuffer();

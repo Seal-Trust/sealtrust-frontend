@@ -85,11 +85,13 @@ export class SealService {
    * IMPORTANT: Always hash BEFORE encryption to enable integrity verification
    * @param file - File to encrypt
    * @param packageId - Seal package ID
+   * @param allowlistId - Allowlist object ID (namespace for policy ID)
    * @returns Encrypted data, policy ID, and original hash
    */
   async encryptDataset(
     file: File,
-    packageId: string
+    packageId: string,
+    allowlistId: string
   ): Promise<{
     encryptedData: Uint8Array;
     policyId: string;
@@ -102,9 +104,11 @@ export class SealService {
     const originalHash = await this.hashFile(file);
     console.log('Original file hash (before encryption):', originalHash);
 
-    // 3. Generate unique policy ID for this dataset (hex format required by Seal)
-    const nonce = crypto.getRandomValues(new Uint8Array(16)); // 128-bit random ID
-    const policyId = toHex(nonce);
+    // 3. Generate policy ID with allowlist namespace prefix
+    // Import allowlistService to avoid code duplication
+    const { allowlistService } = await import('./allowlist-service');
+    const policyId = allowlistService.generatePolicyId(allowlistId);
+
     console.log('Generated Seal policy ID (hex):', policyId);
 
     // 4. Encrypt with Seal
@@ -227,6 +231,7 @@ export class SealService {
    *
    * @param encryptedBlob - Encrypted blob (ArrayBuffer from Walrus)
    * @param policyId - Seal policy ID from DatasetNFT
+   * @param allowlistId - Allowlist object ID for access control
    * @param packageId - Seal package ID
    * @param allowlistPackageId - Seal allowlist package ID for approval
    * @param address - User's wallet address
@@ -237,6 +242,7 @@ export class SealService {
   async downloadAndDecryptDataset(
     encryptedBlob: ArrayBuffer,
     policyId: string,
+    allowlistId: string,
     packageId: string,
     allowlistPackageId: string,
     address: string,
@@ -252,19 +258,21 @@ export class SealService {
     );
 
     // Build approval transaction for Seal access control
-    // This is required for production Seal servers
+    // This follows the official Seal pattern from AllowlistView.tsx
     console.log('Building Seal approval transaction...');
+    console.log('  Policy ID:', policyId);
+    console.log('  Allowlist ID:', allowlistId);
     const { Transaction } = await import('@mysten/sui/transactions');
     const tx = new Transaction();
 
     // Call seal_approve to grant access
-    // Note: This assumes you're using the allowlist pattern from Seal examples
-    // Adjust the function name/module if using a different access control pattern
+    // CRITICAL: Arguments must be [policyId_bytes, allowlist_object]
+    // This matches the official Seal example pattern
     tx.moveCall({
       target: `${allowlistPackageId}::allowlist::seal_approve`,
       arguments: [
-        tx.pure.vector('u8', fromHex(policyId)),  // Pass encryption ID as bytes vector
-        tx.pure.address(address),
+        tx.pure.vector('u8', fromHex(policyId)),  // Policy ID as bytes vector
+        tx.object(allowlistId),                    // Allowlist shared object
       ],
     });
 

@@ -204,7 +204,7 @@ export default function AboutPage() {
                 <div>
                   <h3 className="font-semibold text-orange-900 mb-2">Dataset Integrity Verification</h3>
                   <p className="text-sm text-orange-800">
-                    Verify dataset authenticity and detect tampering. Ensure data hasn't been modified since verification timestamp.
+                    Verify dataset authenticity and detect tampering. Ensure data hasn&apos;t been modified since verification timestamp.
                   </p>
                 </div>
 
@@ -247,8 +247,8 @@ export default function AboutPage() {
                   </p>
 
                   <p>
-                    <strong className="text-foreground">Privacy:</strong> Dataset URLs and metadata are public.
-                    Future versions will support Seal encryption for private verification.
+                    <strong className="text-foreground">Privacy:</strong> Datasets are encrypted with Seal before storage.
+                    Only authorized wallets can decrypt and access the original data.
                   </p>
                 </div>
               </div>

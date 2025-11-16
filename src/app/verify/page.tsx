@@ -3,20 +3,15 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Header } from '@/components/layout/Header';
-import { DatasetQR } from '@/components/dataset/DatasetQR';
+import { VerificationResultPanel } from '@/components/verify/VerificationResultPanel';
 import { SuiWalletButton } from '@/components/wallet/SuiWalletButton';
 import {
   ArrowLeft,
-  QrCode,
   Upload,
-  Copy,
-  CheckCircle,
   CircleNotch,
-  Warning,
   MagnifyingGlass,
   Globe,
   Hash,
-  Files
 } from '@phosphor-icons/react';
 import { useCurrentAccount } from '@mysten/dapp-kit';
 import { useTruthMarket } from '@/hooks/useTruthMarket';
@@ -25,12 +20,12 @@ import { toast } from 'sonner';
 
 export default function VerifyPage() {
   const account = useCurrentAccount();
-  const [verificationMethod, setVerificationMethod] = useState<'file' | 'url'>('file');
+  const [verificationMethod, setVerificationMethod] = useState<'file' | 'url' | 'hash'>('file');
   const [fileUrl, setFileUrl] = useState('');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [manualHash, setManualHash] = useState('');
   const [computedHash, setComputedHash] = useState('');
   const [isHashing, setIsHashing] = useState(false);
-  const [copied, setCopied] = useState(false);
 
   const { verifyDataset, verifying } = useTruthMarket();
   const [verificationResult, setVerificationResult] = useState<{
@@ -40,16 +35,37 @@ export default function VerifyPage() {
     tx_digest?: string;
   } | null>(null);
 
+  // Debug state changes (AFTER state declaration)
+  console.log('📄 VerifyPage render:', {
+    computedHash: computedHash ? computedHash.substring(0, 16) + '...' : 'none',
+    verifying,
+    hasResult: !!verificationResult
+  });
+
   // Handle URL params for easy sharing
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const hash = params.get('hash');
     if (hash) {
       setComputedHash(hash);
-      // Auto-verify if hash is provided
-      handleVerify(hash);
+      setVerificationMethod('hash');
+      setManualHash(hash);
     }
   }, []);
+
+  // AUTO-VERIFICATION: Trigger verification when hash is computed
+  useEffect(() => {
+    if (
+      computedHash &&
+      computedHash.length === 64 &&
+      !verificationResult &&
+      !verifying &&
+      !isHashing
+    ) {
+      console.log('🚀 Auto-triggering verification for hash:', computedHash.substring(0, 16) + '...');
+      handleVerify(computedHash);
+    }
+  }, [computedHash]); // Only trigger when computedHash changes
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -61,6 +77,7 @@ export default function VerifyPage() {
   };
 
   const handleHashComputation = async () => {
+    console.log('🔨 handleHashComputation called, method:', verificationMethod);
     setIsHashing(true);
     setVerificationResult(null);
 
@@ -73,6 +90,7 @@ export default function VerifyPage() {
           setIsHashing(false);
           return;
         }
+        console.log('📁 Computing hash for file:', selectedFile.name);
         hashResult = await computeFileHash(selectedFile);
       } else {
         if (!fileUrl) {
@@ -80,12 +98,15 @@ export default function VerifyPage() {
           setIsHashing(false);
           return;
         }
+        console.log('🌐 Computing hash for URL:', fileUrl);
         hashResult = await computeUrlHash(fileUrl);
       }
 
+      console.log('✅ Hash computed:', hashResult.hash.substring(0, 16) + '...');
       setComputedHash(hashResult.hash);
       toast.success(`Hash computed: ${formatHash(hashResult.hash, 16)}`);
     } catch (error) {
+      console.error('💥 Hash computation error:', error);
       toast.error(error instanceof Error ? error.message : 'Failed to compute hash');
       setComputedHash('');
     } finally {
@@ -95,6 +116,8 @@ export default function VerifyPage() {
 
   const handleVerify = async (hashToVerify?: string) => {
     const hash = hashToVerify || computedHash;
+    console.log('🔍 handleVerify called with hash:', hash ? `${hash.substring(0, 16)}...` : 'none');
+
     if (!hash) {
       toast.error('Please compute hash first');
       return;
@@ -103,25 +126,26 @@ export default function VerifyPage() {
     const toastId = toast.loading('Searching blockchain...');
 
     try {
+      console.log('📡 Calling verifyDataset...');
       const result = await verifyDataset(hash);
+      console.log('✅ verifyDataset result:', { found: result.found, hasDataset: !!result.dataset });
+
       setVerificationResult(result);
 
       if (result.found) {
+        console.log('🎉 Dataset found! Details:', {
+          name: result.dataset?.name,
+          timestamp: result.dataset?.verification_timestamp,
+          owner: result.registrant
+        });
         toast.success('Dataset found in registry!', { id: toastId });
       } else {
+        console.log('❌ Dataset not found in registry');
         toast.error('Dataset not found in registry', { id: toastId });
       }
     } catch (error) {
+      console.error('💥 Verification error:', error);
       toast.error(error instanceof Error ? error.message : 'Network error', { id: toastId });
-    }
-  };
-
-  const copyHash = () => {
-    if (computedHash) {
-      navigator.clipboard.writeText(computedHash);
-      setCopied(true);
-      toast.success('Hash copied to clipboard');
-      setTimeout(() => setCopied(false), 2000);
     }
   };
 
@@ -156,11 +180,12 @@ export default function VerifyPage() {
                 <label className="text-sm font-medium text-foreground">
                   Verification Method
                 </label>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-3 gap-3">
                   <button
                     onClick={() => {
                       setVerificationMethod('file');
                       setFileUrl('');
+                      setManualHash('');
                       setComputedHash('');
                       setVerificationResult(null);
                     }}
@@ -177,6 +202,7 @@ export default function VerifyPage() {
                     onClick={() => {
                       setVerificationMethod('url');
                       setSelectedFile(null);
+                      setManualHash('');
                       setComputedHash('');
                       setVerificationResult(null);
                     }}
@@ -188,6 +214,23 @@ export default function VerifyPage() {
                   >
                     <Globe weight="regular" size={24} className="text-primary" />
                     <span className="text-sm font-medium">Enter URL</span>
+                  </button>
+                  <button
+                    onClick={() => {
+                      setVerificationMethod('hash');
+                      setSelectedFile(null);
+                      setFileUrl('');
+                      setComputedHash('');
+                      setVerificationResult(null);
+                    }}
+                    className={`p-3 rounded-xl border transition-all flex flex-col items-center gap-2 ${
+                      verificationMethod === 'hash'
+                        ? 'border-primary bg-primary/10'
+                        : 'border-border bg-white hover:border-primary/50'
+                    }`}
+                  >
+                    <Hash weight="regular" size={24} className="text-primary" />
+                    <span className="text-sm font-medium">Enter Hash</span>
                   </button>
                 </div>
               </div>
@@ -212,7 +255,7 @@ export default function VerifyPage() {
                       )}
                     </div>
                   </div>
-                ) : (
+                ) : verificationMethod === 'url' ? (
                   <div>
                     <label className="text-sm font-medium text-foreground mb-2 block">
                       Dataset URL
@@ -225,160 +268,67 @@ export default function VerifyPage() {
                       className="w-full px-4 py-3 rounded-xl bg-white border border-border focus:outline-none focus:border-primary transition-colors"
                     />
                   </div>
-                )}
-
-                {/* Compute Hash Button */}
-                <button
-                  onClick={handleHashComputation}
-                  disabled={isHashing || (!selectedFile && !fileUrl)}
-                  className="w-full px-6 py-3 rounded-xl gradient-primary text-white font-semibold hover:shadow-lg hover:scale-105 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:hover:scale-100"
-                >
-                  {isHashing ? (
-                    <>
-                      <CircleNotch weight="regular" size={20} className="animate-spin" />
-                      <span>Computing Hash...</span>
-                    </>
-                  ) : (
-                    <>
-                      <Hash weight="regular" size={20} />
-                      <span>Compute Hash</span>
-                    </>
-                  )}
-                </button>
-
-                {/* Computed Hash Display */}
-                {computedHash && (
-                  <div className="bg-orange-50 border border-orange-200 rounded-xl p-4">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm font-semibold text-orange-900">Computed Hash</span>
-                      <button
-                        onClick={copyHash}
-                        className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-lg bg-white border border-orange-200 hover:bg-orange-100 transition-colors"
-                      >
-                        {copied ? (
-                          <>
-                            <CheckCircle weight="fill" size={14} className="text-success" />
-                            <span>Copied!</span>
-                          </>
-                        ) : (
-                          <>
-                            <Copy weight="regular" size={14} />
-                            <span>Copy</span>
-                          </>
-                        )}
-                      </button>
-                    </div>
-                    <code className="text-xs font-mono text-orange-800 break-all">
-                      {computedHash}
-                    </code>
+                ) : (
+                  <div>
+                    <label className="text-sm font-medium text-foreground mb-2 block">
+                      Dataset Hash (SHA-256)
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="e.g., abc123def456789... (64 characters)"
+                      value={manualHash}
+                      onChange={(e) => {
+                        const hash = e.target.value.toLowerCase().replace(/[^0-9a-f]/g, '');
+                        setManualHash(hash);
+                        // Set computed hash if valid length
+                        if (hash.length === 64) {
+                          setComputedHash(hash);
+                        } else {
+                          setComputedHash('');
+                          setVerificationResult(null);
+                        }
+                      }}
+                      maxLength={64}
+                      className="w-full px-4 py-3 rounded-xl bg-white border border-border focus:outline-none focus:border-primary transition-colors font-mono text-sm"
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Enter the SHA-256 hash (64 hex characters). {manualHash.length}/64
+                      {manualHash.length === 64 && ' ✓'}
+                    </p>
                   </div>
                 )}
 
-                {/* Verify Button */}
-                {computedHash && (
+                {/* Compute Hash Button (only for file/URL methods) */}
+                {verificationMethod !== 'hash' && (
                   <button
-                    onClick={() => handleVerify()}
-                    disabled={verifying}
-                    className="w-full px-6 py-3 rounded-xl bg-primary text-white font-semibold hover:shadow-lg hover:scale-105 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                    onClick={handleHashComputation}
+                    disabled={isHashing || (!selectedFile && !fileUrl)}
+                    className="w-full px-6 py-3 rounded-xl gradient-primary text-white font-semibold hover:shadow-lg hover:scale-105 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:hover:scale-100"
                   >
-                    {verifying ? (
+                    {isHashing ? (
                       <>
                         <CircleNotch weight="regular" size={20} className="animate-spin" />
-                        <span>Searching...</span>
+                        <span>Computing Hash...</span>
                       </>
                     ) : (
                       <>
-                        <MagnifyingGlass weight="regular" size={20} />
-                        <span>Verify on Blockchain</span>
+                        <Hash weight="regular" size={20} />
+                        <span>Compute Hash & Verify</span>
                       </>
                     )}
                   </button>
                 )}
-
-                {/* Verification Result */}
-                {verificationResult && (
-                  <div className={`rounded-xl p-6 ${
-                    verificationResult.found
-                      ? 'bg-green-50 border border-green-200'
-                      : 'bg-red-50 border border-red-200'
-                  }`}>
-                    <div className="flex items-start gap-3">
-                      {verificationResult.found ? (
-                        <CheckCircle weight="fill" size={24} className="text-green-600 mt-1" />
-                      ) : (
-                        <Warning weight="fill" size={24} className="text-red-600 mt-1" />
-                      )}
-                      <div className="flex-1 space-y-2">
-                        <h3 className={`font-semibold ${
-                          verificationResult.found ? 'text-green-900' : 'text-red-900'
-                        }`}>
-                          {verificationResult.found ? 'Dataset Verified!' : 'Dataset Not Found'}
-                        </h3>
-                        <p className={`text-sm ${
-                          verificationResult.found ? 'text-green-800' : 'text-red-800'
-                        }`}>
-                          {verificationResult.found
-                            ? 'This dataset has been registered and verified on the blockchain.'
-                            : 'This dataset has not been registered on the blockchain.'}
-                        </p>
-
-                        {verificationResult.found && verificationResult.dataset && (
-                          <div className="mt-4 space-y-2 text-sm">
-                            {verificationResult.dataset.timestamp && (
-                              <div>
-                                <span className="font-medium">Registered: </span>
-                                {new Date(verificationResult.dataset.timestamp).toLocaleDateString()}
-                              </div>
-                            )}
-                            {verificationResult.registrant && (
-                              <div>
-                                <span className="font-medium">By: </span>
-                                <code className="text-xs">{verificationResult.registrant.slice(0, 12)}...</code>
-                              </div>
-                            )}
-                            {verificationResult.tx_digest && (
-                              <a
-                                href={`https://suiscan.xyz/testnet/tx/${verificationResult.tx_digest}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="inline-flex items-center gap-1 text-primary hover:underline mt-2"
-                              >
-                                View Transaction →
-                              </a>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                )}
               </div>
             </div>
 
-            {/* Right QR Code Section */}
+            {/* Right - Verification Result Panel */}
             <div className="lg:sticky lg:top-24">
-              {computedHash && verificationResult?.found ? (
-                <div className="bg-white rounded-2xl shadow-xl border border-border p-6">
-                  <div className="flex items-center gap-2 mb-6">
-                    <QrCode weight="regular" size={24} className="text-primary" />
-                    <h2 className="text-2xl font-bold">Verification QR Code</h2>
-                  </div>
-
-                  <DatasetQR
-                    hash={computedHash}
-                    datasetName={verificationResult.dataset?.name}
-                    timestamp={verificationResult.dataset?.timestamp}
-                  />
-                </div>
-              ) : (
-                <div className="bg-white rounded-2xl shadow-xl border border-border p-12 text-center">
-                  <Files weight="light" size={64} className="mx-auto mb-4 text-muted-foreground" />
-                  <h3 className="text-xl font-semibold mb-2">No Verified Dataset</h3>
-                  <p className="text-muted-foreground">
-                    Compute a hash and verify it to generate a QR code
-                  </p>
-                </div>
-              )}
+              <VerificationResultPanel
+                computedHash={computedHash}
+                verifying={verifying}
+                isHashing={isHashing}
+                verificationResult={verificationResult}
+              />
             </div>
           </div>
         </div>

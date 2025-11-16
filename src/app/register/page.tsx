@@ -12,6 +12,7 @@ import QRCode from 'react-qr-code';
 import { Transaction } from '@mysten/sui/transactions';
 import { sealService } from '@/lib/seal-service';
 import { walrusService } from '@/lib/walrus-service';
+import { allowlistService } from '@/lib/allowlist-service';
 import { CONFIG, ERROR_MESSAGES } from '@/lib/constants';
 import { stringToVecU8, hexToVecU8, MetadataVerificationRequest } from '@/lib/types';
 import { useDatasetFetch } from '@/hooks/useDatasetFetch';
@@ -45,6 +46,8 @@ export default function RegisterPage() {
 
   // Error recovery cache - preserve intermediate results
   const [cachedResults, setCachedResults] = useState<{
+    allowlistId?: string;
+    allowlistCapId?: string;
     originalHash?: string;
     encryptedData?: Uint8Array;
     policyId?: string;
@@ -132,14 +135,40 @@ export default function RegisterPage() {
       setProgress('Initializing Seal encryption service...');
       await sealService.initialize();
 
-      // Step 2 & 3: Hash and Encrypt with Seal
+      // Step 2: Create allowlist for access control
+      setProgress('Creating Seal allowlist for access control...');
+      const { allowlistId, capId } = await allowlistService.createAllowlist(
+        `Access for ${datasetFile.name}`,
+        CONFIG.SEAL_ALLOWLIST_PACKAGE_ID,
+        signAndExecuteTransaction
+      );
+
+      console.log('✅ Allowlist created:', allowlistId);
+      console.log('✅ Allowlist admin cap:', capId);
+
+      // Cache allowlist for error recovery
+      setCachedResults(prev => ({ ...prev, allowlistId, allowlistCapId: capId }));
+
+      // Add uploader to allowlist automatically so they can download their own dataset
+      setProgress('Adding uploader to allowlist...');
+      await allowlistService.addUser(
+        allowlistId,
+        capId,
+        currentAccount.address,
+        CONFIG.SEAL_ALLOWLIST_PACKAGE_ID,
+        signAndExecuteTransaction
+      );
+      console.log('✅ Uploader added to allowlist');
+
+      // Step 3 & 4: Hash and Encrypt with Seal (using allowlist namespace)
       // NOTE: encryptDataset now returns originalHash to avoid double hashing!
       setStep('encrypting');
       setProgress('Encrypting dataset with Seal (includes hashing)...');
 
       const { encryptedData, policyId, originalHash } = await sealService.encryptDataset(
         datasetFile,
-        CONFIG.SEAL_PACKAGE_ID
+        CONFIG.SEAL_PACKAGE_ID,
+        allowlistId
       );
 
       // Cache results for error recovery
@@ -212,7 +241,13 @@ export default function RegisterPage() {
       // Convert signature from hex to bytes (Nautilus returns hex-encoded)
       const signatureBytes = hexToVecU8(attestation.signature);
 
+      // Validate allowlist ID before passing to Move contract
+      if (!allowlistId || allowlistId.trim() === '') {
+        throw new Error('Invalid allowlist ID - allowlist creation may have failed');
+      }
+
       // CRITICAL: Capture the NFT returned by the Move function
+      // Pass allowlist ID as Option<ID> (Some(allowlistId))
       const [nft] = tx.moveCall({
         target: `${CONFIG.VERIFICATION_PACKAGE}::truthmarket::register_dataset_dev`,
         typeArguments: [`${CONFIG.VERIFICATION_PACKAGE}::truthmarket::TRUTHMARKET`],
@@ -224,6 +259,7 @@ export default function RegisterPage() {
           tx.pure.vector('u8', hexToVecU8(metadataHash)),  // Convert hex string to bytes
           tx.pure.string(blobId.trim()),      // Remove any whitespace
           tx.pure.string(policyId.trim()),    // Remove any whitespace
+          tx.pure.option('id', allowlistId.trim()),  // Option<ID> for allowlist (validated)
           tx.pure.u64(timestamp),
           tx.pure.vector('u8', signatureBytes),
           tx.object(CONFIG.ENCLAVE_ID),
