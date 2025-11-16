@@ -245,7 +245,7 @@ export function DatasetReceipt({
         <button
           onClick={handleDownloadReceipt}
           disabled={downloading}
-          className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-gray-50 hover:bg-gray-100 border border-gray-200 hover:border-gray-300 rounded-lg text-sm text-gray-700 transition-all disabled:opacity-50"
+          className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-primary hover:bg-primary/90 rounded-lg text-sm text-white font-medium transition-all disabled:opacity-50"
         >
           <Download className="w-4 h-4" />
           <span>{downloading ? 'Generating...' : 'Download PNG'}</span>
