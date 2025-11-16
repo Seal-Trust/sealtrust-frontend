@@ -42,7 +42,7 @@ export interface ProcessedDataResponse {
 }
 
 // DatasetNFT on-chain V3 (from Move contract)
-// This MUST match truthmarket.move line 13-37
+// This MUST match truthmarket.move line 14-39
 export interface DatasetNFT {
   id: string;
 
@@ -53,6 +53,7 @@ export interface DatasetNFT {
   // Storage references (CRITICAL for V3!)
   walrus_blob_id: string;        // Where encrypted blob is stored
   seal_policy_id: string;        // Access control policy ID
+  seal_allowlist_id: string;     // Allowlist object ID for access control
 
   // Metadata
   name: string;                  // Dataset name
