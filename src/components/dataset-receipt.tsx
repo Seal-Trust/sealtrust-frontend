@@ -39,6 +39,7 @@ export function DatasetReceipt({
 }: DatasetReceiptProps) {
   const [copied, setCopied] = useState(false);
   const [downloading, setDownloading] = useState(false);
+  const [capIdSaved, setCapIdSaved] = useState(false);
 
   const receiptUrl = `${typeof window !== 'undefined' ? window.location.origin : ''}/verify?hash=${hash}`;
 
@@ -152,34 +153,57 @@ export function DatasetReceipt({
 
           {/* Access Control IDs - CRITICAL SECTION */}
           {allowlistId && allowlistCapId && (
-            <div className="p-4 bg-orange-50 border-2 border-orange-200 rounded-lg space-y-3">
-              <div className="flex items-start gap-2">
-                <div className="flex-shrink-0 w-5 h-5 rounded-full bg-orange-500 flex items-center justify-center mt-0.5">
-                  <span className="text-white text-xs font-bold">!</span>
+            <div className="p-5 bg-red-50 border-4 border-red-500 rounded-lg space-y-4">
+              <div className="flex items-start gap-3">
+                <div className="flex-shrink-0 w-8 h-8 rounded-full bg-red-600 flex items-center justify-center mt-0.5">
+                  <span className="text-white text-lg font-bold">!</span>
                 </div>
                 <div className="flex-1">
-                  <p className="text-xs font-semibold text-orange-900 mb-1">
-                    IMPORTANT: Save These Access Control IDs
+                  <p className="text-sm font-bold text-red-900 mb-2 flex items-center gap-2">
+                    ⚠️ CRITICAL: Save Your Admin Cap ID Now
                   </p>
-                  <p className="text-xs text-orange-700 leading-relaxed">
-                    You need the Cap ID below to manage who can access your dataset. Save it now - you won't see it again!
+                  <p className="text-sm text-red-800 leading-relaxed mb-2">
+                    <strong>Without the Cap ID below, you will PERMANENTLY LOSE the ability to manage who can access your dataset.</strong>
+                  </p>
+                  <p className="text-xs text-red-700 leading-relaxed">
+                    There is NO recovery method. This is your only chance to save it. Copy both IDs to a secure location before closing this window.
                   </p>
                 </div>
               </div>
 
-              <div className="space-y-2">
+              <div className="space-y-3">
                 <div>
-                  <p className="text-xs text-orange-700 mb-1 font-medium">Allowlist ID</p>
-                  <p className="text-xs text-orange-900 font-mono break-all bg-white px-2 py-1.5 rounded border border-orange-200">
+                  <p className="text-xs text-red-800 mb-1 font-bold">Allowlist ID</p>
+                  <p className="text-xs text-red-950 font-mono break-all bg-white px-3 py-2 rounded border-2 border-red-300">
                     {allowlistId}
                   </p>
                 </div>
                 <div>
-                  <p className="text-xs text-orange-700 mb-1 font-medium">Admin Cap ID (Required for Access Management)</p>
-                  <p className="text-xs text-orange-900 font-mono break-all bg-white px-2 py-1.5 rounded border border-orange-200">
+                  <p className="text-xs text-red-800 mb-1 font-bold">🔑 Admin Cap ID (SAVE THIS!)</p>
+                  <p className="text-xs text-red-950 font-mono break-all bg-white px-3 py-2 rounded border-2 border-red-400">
                     {allowlistCapId}
                   </p>
                 </div>
+              </div>
+
+              {/* Acknowledgment Checkbox */}
+              <div className="pt-3 border-t-2 border-red-300">
+                <label className="flex items-start gap-3 cursor-pointer group">
+                  <input
+                    type="checkbox"
+                    checked={capIdSaved}
+                    onChange={(e) => setCapIdSaved(e.target.checked)}
+                    className="mt-1 w-5 h-5 text-red-600 border-red-400 rounded focus:ring-red-500 cursor-pointer"
+                  />
+                  <span className="text-sm font-semibold text-red-900 group-hover:text-red-950 transition-colors">
+                    I have securely saved the Admin Cap ID above to a safe location
+                  </span>
+                </label>
+                {!capIdSaved && (
+                  <p className="text-xs text-red-700 mt-2 ml-8">
+                    ⚠️ You must acknowledge saving the Cap ID to proceed
+                  </p>
+                )}
               </div>
             </div>
           )}
@@ -315,17 +339,39 @@ export function DatasetReceipt({
 
   // If onClose is provided, wrap in modal
   if (onClose) {
+    const hasAccessControl = allowlistId && allowlistCapId;
+    const canClose = !hasAccessControl || capIdSaved;
+
     return (
       <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto">
         <div className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto bg-white rounded-xl shadow-2xl">
           <button
-            onClick={onClose}
-            className="sticky top-4 left-full ml-4 p-2 rounded-lg bg-white hover:bg-gray-100 border border-gray-200 shadow-lg transition-all z-10"
+            onClick={canClose ? onClose : undefined}
+            disabled={!canClose}
+            className={`sticky top-4 left-full ml-4 p-2 rounded-lg border shadow-lg transition-all z-10 ${
+              canClose
+                ? 'bg-white hover:bg-gray-100 border-gray-200 cursor-pointer'
+                : 'bg-red-100 border-red-400 cursor-not-allowed opacity-50'
+            }`}
+            title={!canClose ? "Please acknowledge saving the Cap ID first" : "Close"}
           >
-            <X className="w-5 h-5 text-gray-600" />
+            <X className={`w-5 h-5 ${canClose ? 'text-gray-600' : 'text-red-600'}`} />
           </button>
           <div className="p-6">
             {content}
+
+            {/* Warning if trying to close without acknowledgment */}
+            {hasAccessControl && !capIdSaved && (
+              <div className="mt-6 p-4 bg-yellow-50 border-2 border-yellow-400 rounded-lg">
+                <p className="text-sm font-semibold text-yellow-900 mb-1">
+                  ⚠️ Cannot Close Yet
+                </p>
+                <p className="text-xs text-yellow-800">
+                  Please acknowledge that you have saved the Admin Cap ID before closing this receipt.
+                  Check the box above to proceed.
+                </p>
+              </div>
+            )}
           </div>
         </div>
       </div>

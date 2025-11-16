@@ -42,6 +42,7 @@ export default function DatasetDetailPage() {
   const [showDownloadModal, setShowDownloadModal] = useState(false);
   const [capId, setCapId] = useState<string | null>(null);
   const [capLoading, setCapLoading] = useState(false);
+  const [capDiscoveryError, setCapDiscoveryError] = useState<string | null>(null);
 
   // Fetch dataset details on mount
   useEffect(() => {
@@ -65,55 +66,67 @@ export default function DatasetDetailPage() {
     }
   }, [nftId, getDatasetDetails]);
 
-  // Discover Cap ID when user owns the dataset
-  useEffect(() => {
-    const discoverCap = async () => {
-      // Only discover if:
-      // 1. Dataset is loaded
-      // 2. Dataset has an allowlist
-      // 3. User is connected and owns the dataset
-      if (!dataset || !dataset.seal_allowlist_id || !currentAccount || currentAccount.address !== dataset.owner) {
-        return;
-      }
+  // Cap discovery function (can be called for retry)
+  const discoverCap = async () => {
+    // Only discover if:
+    // 1. Dataset is loaded
+    // 2. Dataset has an allowlist
+    // 3. User is connected and owns the dataset
+    if (!dataset || !dataset.seal_allowlist_id || !currentAccount || currentAccount.address !== dataset.owner) {
+      return;
+    }
 
-      setCapLoading(true);
-      try {
-        // Query for Cap objects owned by the user
-        const capStructType = `${CONFIG.SEAL_ALLOWLIST_PACKAGE_ID}::allowlist::Cap`;
+    setCapLoading(true);
+    setCapDiscoveryError(null);
+    setCapId(null); // Reset previous result
 
-        const ownedObjects = await suiClient.getOwnedObjects({
-          owner: currentAccount.address,
-          filter: {
-            StructType: capStructType,
-          },
-          options: {
-            showContent: true,
-          },
-        });
+    try {
+      // Query for Cap objects owned by the user
+      const capStructType = `${CONFIG.SEAL_ALLOWLIST_PACKAGE_ID}::allowlist::Cap`;
 
-        // Find Cap that matches this dataset's allowlist
-        for (const obj of ownedObjects.data) {
-          if (obj.data && 'content' in obj.data && obj.data.content) {
-            const content = obj.data.content as any;
-            if (content.dataType === 'moveObject' && content.fields) {
-              // Check if this Cap's allowlist_id matches the dataset's seal_allowlist_id
-              if (content.fields.allowlist_id === dataset.seal_allowlist_id) {
-                setCapId(obj.data.objectId);
-                console.log('✅ Found Cap ID:', obj.data.objectId);
-                return;
-              }
+      const ownedObjects = await suiClient.getOwnedObjects({
+        owner: currentAccount.address,
+        filter: {
+          StructType: capStructType,
+        },
+        options: {
+          showContent: true,
+        },
+      });
+
+      // Find Cap that matches this dataset's allowlist
+      let found = false;
+      for (const obj of ownedObjects.data) {
+        if (obj.data && 'content' in obj.data && obj.data.content) {
+          const content = obj.data.content as any;
+          if (content.dataType === 'moveObject' && content.fields) {
+            // Check if this Cap's allowlist_id matches the dataset's seal_allowlist_id
+            if (content.fields.allowlist_id === dataset.seal_allowlist_id) {
+              setCapId(obj.data.objectId);
+              console.log('✅ Found Cap ID:', obj.data.objectId);
+              found = true;
+              break;
             }
           }
         }
-
-        console.warn('⚠️ Cap not found for this dataset');
-      } catch (err) {
-        console.error('Failed to discover Cap:', err);
-      } finally {
-        setCapLoading(false);
       }
-    };
 
+      if (!found) {
+        console.warn('⚠️ Cap not found for this dataset');
+        // Not setting error here - this is normal if user transferred the Cap
+      }
+    } catch (err) {
+      console.error('Failed to discover Cap:', err);
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error occurred';
+      setCapDiscoveryError(errorMessage);
+      toast.error(`Failed to discover Cap: ${errorMessage}`);
+    } finally {
+      setCapLoading(false);
+    }
+  };
+
+  // Discover Cap ID when user owns the dataset
+  useEffect(() => {
     discoverCap();
   }, [dataset, currentAccount, suiClient]);
 
@@ -463,18 +476,51 @@ export default function DatasetDetailPage() {
                   capId={capId}
                   ownerAddress={dataset.owner}
                 />
-              ) : (
-                <div className="bg-orange-50 border border-orange-200 rounded-lg p-6">
-                  <div className="flex items-start gap-3">
-                    <Warning weight="duotone" size={24} className="text-orange-600 flex-shrink-0 mt-1" />
-                    <div>
-                      <p className="font-semibold text-orange-900 mb-1">Access Management Unavailable</p>
-                      <p className="text-sm text-orange-800">
-                        Unable to find the Admin Cap for this dataset. You may have transferred it to another wallet.
-                        The Cap ID is required to manage access controls.
+              ) : capDiscoveryError ? (
+                <div className="bg-red-50 border-2 border-red-300 rounded-lg p-6">
+                  <div className="flex items-start gap-3 mb-4">
+                    <Warning weight="fill" size={24} className="text-red-600 flex-shrink-0 mt-1" />
+                    <div className="flex-1">
+                      <p className="font-semibold text-red-900 mb-1">Failed to Discover Admin Cap</p>
+                      <p className="text-sm text-red-800 mb-2">
+                        An error occurred while trying to find your Admin Cap:
+                      </p>
+                      <p className="text-xs text-red-700 font-mono bg-red-100 px-3 py-2 rounded border border-red-200">
+                        {capDiscoveryError}
                       </p>
                     </div>
                   </div>
+                  <button
+                    onClick={discoverCap}
+                    className="w-full px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
+                  >
+                    <CircleNotch weight="regular" size={16} />
+                    Retry Discovery
+                  </button>
+                </div>
+              ) : (
+                <div className="bg-orange-50 border border-orange-200 rounded-lg p-6">
+                  <div className="flex items-start gap-3 mb-4">
+                    <Warning weight="duotone" size={24} className="text-orange-600 flex-shrink-0 mt-1" />
+                    <div className="flex-1">
+                      <p className="font-semibold text-orange-900 mb-1">Access Management Unavailable</p>
+                      <p className="text-sm text-orange-800 mb-2">
+                        Unable to find the Admin Cap for this dataset. This could mean:
+                      </p>
+                      <ul className="text-xs text-orange-700 space-y-1 list-disc list-inside">
+                        <li>You transferred the Cap to another wallet</li>
+                        <li>The Cap is owned by a different account</li>
+                        <li>The Cap ID was not saved during registration</li>
+                      </ul>
+                    </div>
+                  </div>
+                  <button
+                    onClick={discoverCap}
+                    className="w-full px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
+                  >
+                    <CircleNotch weight="regular" size={16} />
+                    Try Again
+                  </button>
                 </div>
               )}
             </div>

@@ -101,6 +101,12 @@ export function AccessManagement({
 
   // Remove member
   const handleRemoveMember = async (address: string) => {
+    // Prevent owner from removing themselves
+    if (address === ownerAddress) {
+      toast.error('You cannot remove yourself as the dataset owner from the allowlist');
+      return;
+    }
+
     if (!confirm(`Remove ${address.slice(0, 10)}...${address.slice(-8)} from allowlist?`)) {
       return;
     }
@@ -230,9 +236,9 @@ export function AccessManagement({
                 </div>
                 <button
                   onClick={() => handleRemoveMember(address)}
-                  disabled={removing === address}
-                  className="ml-3 p-2 text-red-500 hover:bg-red-50 rounded-lg transition-all disabled:opacity-50"
-                  title="Remove member"
+                  disabled={removing === address || address === ownerAddress}
+                  className="ml-3 p-2 text-red-500 hover:bg-red-50 rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                  title={address === ownerAddress ? "Owner cannot be removed" : "Remove member"}
                 >
                   {removing === address ? (
                     <div className="w-4 h-4 border-2 border-red-500 border-t-transparent rounded-full animate-spin"></div>
