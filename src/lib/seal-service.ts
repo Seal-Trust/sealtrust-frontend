@@ -5,10 +5,6 @@ import { fromHex } from '@mysten/sui/utils';
 import { allowlistService } from './allowlist-service';
 import { CONFIG } from './constants';
 
-// Type alias for clarity - SealClient expects a client with experimental extensions
-// The dapp-kit's useSuiClient() provides this compatible type
-type SealCompatibleClient = SuiClient;
-
 export class SealService {
   /**
    * Create a SealClient instance for operations
@@ -17,9 +13,11 @@ export class SealService {
    * @param suiClient - SuiClient instance (typically from useSuiClient hook)
    * @returns Configured SealClient instance
    */
-  private createSealClient(suiClient: SealCompatibleClient): SealClient {
+  private createSealClient(suiClient: SuiClient): SealClient {
+    // With @mysten/sui 1.45.0 and @mysten/seal 0.9.4, these versions are compatible
+    // The SuiClient from dapp-kit now includes the experimental extensions Seal needs
     return new SealClient({
-      suiClient: suiClient as any, // Type assertion needed due to experimental extensions
+      suiClient,
       serverConfigs: CONFIG.SEAL_KEY_SERVERS.map(objectId => ({
         objectId,
         weight: 1, // Equal weight for all servers
@@ -68,7 +66,7 @@ export class SealService {
     file: File,
     packageId: string,
     allowlistId: string,
-    suiClient: SealCompatibleClient
+    suiClient: SuiClient
   ): Promise<{
     encryptedData: Uint8Array;
     policyId: string;
@@ -132,7 +130,7 @@ export class SealService {
   async getOrCreateSessionKey(
     packageId: string,
     address: string,
-    suiClient: SealCompatibleClient,
+    suiClient: SuiClient,
     signPersonalMessage: (msg: { message: Uint8Array }) => Promise<{ signature: string }>
   ): Promise<SessionKey> {
     const key = `sessionKey_${packageId}_${address}`;
@@ -142,7 +140,7 @@ export class SealService {
       const stored = await get(key);
       if (stored) {
         console.log('Found stored session key, checking validity...');
-        const imported = await SessionKey.import(stored, suiClient as any); // Type cast for experimental extensions
+        const imported = await SessionKey.import(stored, suiClient);
         if (!imported.isExpired()) {
           console.log('✅ Reusing existing session key (no wallet popup needed)');
           return imported;
@@ -159,7 +157,7 @@ export class SealService {
       address,
       packageId,
       ttlMin: CONFIG.SESSION_KEY_TTL,
-      suiClient: suiClient as any, // Type cast for experimental extensions
+      suiClient,
     });
 
     // Get user signature (wallet popup - only happens every 10 min)
@@ -204,7 +202,7 @@ export class SealService {
     encryptedData: Uint8Array,
     sessionKey: SessionKey,
     txBytes: Uint8Array,
-    suiClient: SealCompatibleClient
+    suiClient: SuiClient
   ): Promise<Uint8Array> {
     console.log('Decrypting dataset with Seal...');
 
@@ -245,7 +243,7 @@ export class SealService {
     packageId: string,
     allowlistPackageId: string,
     address: string,
-    suiClient: SealCompatibleClient,
+    suiClient: SuiClient,
     signPersonalMessage: (msg: { message: Uint8Array }) => Promise<{ signature: string }>
   ): Promise<Uint8Array> {
     // Get or create session key (handles IndexedDB persistence)

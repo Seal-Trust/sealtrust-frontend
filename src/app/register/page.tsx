@@ -278,14 +278,31 @@ export default function RegisterPage() {
             capId = cachedResults.allowlistCapId;
           } else {
             console.log('⚠️ Cached allowlist not found on-chain, creating new one...');
-            // Clear invalid cache
-            setCachedResults(prev => ({ ...prev, allowlistId: undefined, allowlistCapId: undefined }));
+            // Clear invalid cache and all dependent data
+            setCachedResults(prev => ({
+              ...prev,
+              allowlistId: undefined,
+              allowlistCapId: undefined,
+              encryptedData: undefined,
+              policyId: undefined,
+              originalHash: undefined,
+              blobId: undefined
+            }));
             throw new Error('Cached allowlist invalid');
           }
         } catch (error) {
           console.log('⚠️ Could not verify cached allowlist, creating new one...', error);
           // Allowlist doesn't exist or is invalid, create a new one
-          setCachedResults(prev => ({ ...prev, allowlistId: undefined, allowlistCapId: undefined }));
+          // Also clear dependent cached data since policy ID depends on allowlist ID
+          setCachedResults(prev => ({
+            ...prev,
+            allowlistId: undefined,
+            allowlistCapId: undefined,
+            encryptedData: undefined,
+            policyId: undefined,
+            originalHash: undefined,
+            blobId: undefined
+          }));
 
           setProgress('Creating Seal allowlist for access control...');
           const result = await allowlistService.createAllowlist(
