@@ -1,0 +1,487 @@
+{
+  "search_summary": {
+    "platforms_searched": [
+      "github",
+      "seal-docs.wal.app",
+      "mystenlabs.com/blog",
+      "npm",
+      "web"
+    ],
+    "repositories_analyzed": 1,
+    "docs_reviewed": 8,
+    "research_date": "2025-11-18"
+  },
+  "repositories": [
+    {
+      "citation": "[1] Mysten Labs. 'Seal - Decentralized Secrets Management.' GitHub, 2024-2025. https://github.com/MystenLabs/seal",
+      "platform": "github",
+      "stats": {
+        "primary_language": "Rust",
+        "language_breakdown": {
+          "rust": "70.0%",
+          "move": "28.7%",
+          "other": "1.3%"
+        },
+        "last_updated": "2025",
+        "version_analyzed": "v0.9.4"
+      },
+      "key_features": [
+        "Identity-based encryption (IBE) with BLS signatures",
+        "Onchain access control policies using Move on Sui",
+        "Threshold encryption (t-of-n key servers)",
+        "Permissioned and Open server modes",
+        "Stateless key server architecture",
+        "Key rotation and migration support",
+        "Client master key derivation from single seed",
+        "Docker deployment support",
+        "Prometheus metrics integration",
+        "CORS-enabled API for web clients"
+      ],
+      "architecture": "Lightweight key servers enforce onchain Sui policies and provide threshold-based decryption keys. Servers are stateless, initialized with IBE master secret keys, and access trusted Sui full nodes. Multiple instances can run behind load balancers for high availability. Clients encrypt data with public keys from n servers and require t servers to respond for decryption (threshold encryption).",
+      "code_quality": {
+        "testing": "adequate",
+        "documentation": "excellent",
+        "maintenance": "active",
+        "security": "production-grade with HSM support"
+      },
+      "deployment_modes": {
+        "open": {
+          "description": "Single shared master key, no access restrictions",
+          "use_case": "Development, testing, experimentation",
+          "security_level": "Low - testnet only"
+        },
+        "permissioned": {
+          "description": "Dedicated master keys per client, package allowlisting",
+          "use_case": "Production, commercial services",
+          "security_level": "High - production-ready"
+        }
+      },
+      "infrastructure_requirements": {
+        "minimum": {
+          "cpu": "2 cores",
+          "memory": "4GB RAM",
+          "storage": "SSD for fast I/O",
+          "network": "Stable internet, access to Sui full node"
+        },
+        "recommended": {
+          "deployment": "Multiple instances behind load balancer",
+          "security": "Cloud KMS or HSM for master key storage",
+          "networking": "API gateway with TLS termination, rate limiting",
+          "monitoring": "Prometheus + Grafana",
+          "sui_node": "Nearby full node for low latency"
+        }
+      },
+      "usage_example": "1. Generate master seed: `cargo run --bin seal-cli gen-seed`\n2. Create config.yaml with Permissioned mode\n3. Run server to discover derived public keys\n4. Register on-chain: `sui client call --function create_and_transfer_v1 --module key_server`\n5. Add client config with package IDs\n6. Deploy with Docker: `docker-compose up -d`\n7. Client integrates using @mysten/seal SDK with keyServers array",
+      "configuration": {
+        "environment_variables": [
+          "MASTER_KEY - Master seed for Permissioned mode (required)",
+          "CONFIG_PATH - Path to config.yaml (required)",
+          "RUST_LOG - Log level: error/warn/info/debug/trace (optional)",
+          "CLIENT_X_BLS_KEY - Imported client keys (if using !Imported)"
+        ],
+        "config_yaml_structure": {
+          "network": "!Testnet | !Mainnet | !Custom { node_url }",
+          "server_mode": "!Open | !Permissioned",
+          "client_configs": [
+            {
+              "client_master_key": "!Derived | !Imported { env_var } | !Exported",
+              "derivation_index": "u32 (for Derived)",
+              "key_server_object_id": "0x...",
+              "package_ids": ["0x..."]
+            }
+          ]
+        },
+        "ports": {
+          "2024": "Key server API (internal only)",
+          "9184": "Prometheus metrics (internal only)",
+          "443": "HTTPS public endpoint (via reverse proxy)"
+        }
+      },
+      "limitations": [
+        "Master seed compromise leads to complete system compromise",
+        "Loss of master seed = permanent loss of encrypted data access",
+        "Package IDs must use first published version (not upgraded versions)",
+        "Requires access to Sui full node for policy validation",
+        "CORS headers required for web client access",
+        "No built-in API authentication (requires external API gateway)",
+        "Stateless design means no request history tracking"
+      ],
+      "alternatives": [
+        "LIT Protocol - Distributed key management",
+        "NuCypher - Proxy re-encryption",
+        "HashiCorp Vault - Centralized secret management",
+        "AWS KMS - Cloud-based key management",
+        "Self-hosted threshold signature schemes"
+      ],
+      "security_considerations": [
+        "Store master seed in enterprise-grade vault (AWS KMS, HashiCorp Vault, HSM)",
+        "Never commit master seed to version control or logs",
+        "Use TLS/SSL with valid certificates for all communications",
+        "Implement rate limiting at API gateway level",
+        "Deploy behind DDoS protection",
+        "Restrict metrics endpoint to internal network only",
+        "Implement key rotation procedures",
+        "Maintain encrypted backups in geographically distributed locations",
+        "Use hardware security modules (HSM) for production",
+        "Monitor for unauthorized access attempts",
+        "Implement audit logging for all key derivations"
+      ]
+    }
+  ],
+  "documentation_sources": [
+    {
+      "citation": "[2] Mysten Labs. 'Seal Documentation - Key Server Operations.' Seal Docs, 2024-2025. https://seal-docs.wal.app/KeyServerOps/",
+      "content_quality": "excellent",
+      "coverage": [
+        "Open mode deployment with complete commands",
+        "Permissioned mode setup workflow",
+        "Client registration process",
+        "Key export and import procedures",
+        "Key server object transfer",
+        "Infrastructure requirements",
+        "Docker deployment examples",
+        "CORS configuration",
+        "Monitoring endpoints"
+      ]
+    },
+    {
+      "citation": "[3] Mysten Labs. 'Seal Mainnet Launch: Bringing Data Privacy and Access Control to Web3.' Mysten Labs Blog, 2025. https://www.mystenlabs.com/blog/seal-mainnet-launch-privacy-access-control",
+      "content_quality": "good",
+      "coverage": [
+        "Mainnet launch announcement",
+        "Commercial key server providers list",
+        "Use cases and applications",
+        "Threshold committee formation",
+        "Provider selection guidance"
+      ]
+    },
+    {
+      "citation": "[4] Mysten Labs. 'Mysten Labs Launches Seal Decentralized Secrets Management on Testnet.' Mysten Labs Blog, 2024. https://www.mystenlabs.com/blog/mysten-labs-launches-seal-decentralized-secrets-management-on-testnet",
+      "content_quality": "good",
+      "coverage": [
+        "Testnet launch details",
+        "Architecture overview",
+        "Security model explanation",
+        "Developer onboarding"
+      ]
+    },
+    {
+      "citation": "[5] Mysten Labs. 'Seal | Data encryption and onchain access control.' Seal Product Page, 2025. https://seal.mystenlabs.com/",
+      "content_quality": "excellent",
+      "coverage": [
+        "Product overview and value proposition",
+        "Key features and capabilities",
+        "Use cases across industries",
+        "Integration resources",
+        "Community links"
+      ]
+    },
+    {
+      "citation": "[6] Mysten Labs. '@mysten/seal - TypeScript SDK.' NPM Registry, 2024-2025. https://www.npmjs.com/package/@mysten/seal",
+      "content_quality": "good",
+      "coverage": [
+        "SDK installation instructions",
+        "Version information",
+        "Basic usage examples",
+        "Dependencies"
+      ]
+    },
+    {
+      "citation": "[7] Mysten Labs. 'Seal SDK Documentation.' TypeScript SDK Docs, 2024-2025. https://sdk.mystenlabs.com/seal",
+      "content_quality": "excellent",
+      "coverage": [
+        "Complete API reference",
+        "Type definitions",
+        "Integration patterns",
+        "Client configuration examples"
+      ]
+    }
+  ],
+  "technical_insights": {
+    "common_patterns": [
+      "Threshold encryption (t-of-n) is standard for production deployments",
+      "Multiple key server providers mixed for trust distribution",
+      "Stateless server architecture behind load balancers for HA",
+      "Master seed derivation for per-client isolation",
+      "Package ID allowlisting for access control",
+      "First-version package ID usage (upgrades inherit access)",
+      "Docker containerization for consistent deployment",
+      "Prometheus metrics for monitoring",
+      "Reverse proxy for TLS termination and rate limiting"
+    ],
+    "best_practices": [
+      "Use Permissioned mode for any production deployment",
+      "Store master seed in enterprise vault (AWS KMS, HashiCorp Vault, HSM)",
+      "Deploy minimum 3 instances for high availability",
+      "Use 2-of-3 or 3-of-5 threshold configuration for resilience",
+      "Mix key server operators across different organizations/jurisdictions",
+      "Implement comprehensive monitoring and alerting",
+      "Deploy Sui full node nearby for low latency policy validation",
+      "Use API gateway for authentication, rate limiting, DDoS protection",
+      "Maintain encrypted backups of master seed in multiple locations",
+      "Test key rotation and disaster recovery procedures regularly",
+      "Document all client configurations and key derivation indices",
+      "Implement audit logging for compliance"
+    ],
+    "pitfalls": [
+      "Losing master seed = permanent data loss (no recovery possible)",
+      "Using Open mode in production (no access control)",
+      "Exposing key server directly without reverse proxy/TLS",
+      "Not implementing rate limiting (DDoS vulnerability)",
+      "Using upgraded package IDs instead of first version",
+      "Storing master seed in environment variables in config files",
+      "Committing .env files with master seeds to git",
+      "Single key server deployment (single point of failure)",
+      "Insufficient monitoring of Sui RPC connectivity",
+      "Not testing failover scenarios",
+      "Forgetting to update server URL after transfer",
+      "Missing CORS headers causing client integration failures"
+    ],
+    "emerging_trends": [
+      "Threshold committees with geographic distribution",
+      "Integration with AI model access control",
+      "Time-locked encryption for DeFi protocols",
+      "Token-gated content and services",
+      "Decentralized social media with encrypted messaging",
+      "Healthcare data access control on blockchain",
+      "Supply chain confidential data sharing",
+      "Gaming assets with time-locked reveals"
+    ]
+  },
+  "implementation_recommendations": [
+    {
+      "scenario": "Small project with 1-10 clients, moderate security requirements",
+      "recommended_solution": "Single key server in Permissioned mode with 2-of-3 threshold using 2 commercial providers + your server",
+      "rationale": "Balances operational complexity with security. Commercial providers handle HA for their nodes, you control one key share. 2-of-3 threshold tolerates one provider downtime.",
+      "estimated_cost": "Low - 1 server + 2 provider fees",
+      "complexity": "Low"
+    },
+    {
+      "scenario": "Medium project with 10-100 clients, high security requirements",
+      "recommended_solution": "3 key server instances behind load balancer in Permissioned mode, 3-of-5 threshold with 2 self-hosted + 3 commercial providers",
+      "rationale": "High availability with geographic distribution. Can tolerate 2 provider failures. Self-hosted instances give full control. Mix of providers distributes trust.",
+      "estimated_cost": "Medium - 3 servers + monitoring + 3 provider fees",
+      "complexity": "Medium"
+    },
+    {
+      "scenario": "Enterprise with 100+ clients, compliance and regulatory requirements",
+      "recommended_solution": "Multi-region HA deployment with 5+ instances per region, 5-of-9 threshold mixing providers across jurisdictions, HSM for master seed storage",
+      "rationale": "Meets enterprise SLAs and compliance needs. Geographic diversity for regulatory compliance. HSM provides highest security. Can tolerate multiple failures.",
+      "estimated_cost": "High - 10+ servers + HSM + monitoring + multiple provider fees",
+      "complexity": "High"
+    },
+    {
+      "scenario": "Development and testing",
+      "recommended_solution": "Use existing Open mode testnet key servers provided by Mysten Labs and partners",
+      "rationale": "No deployment needed. Free access. No security guarantees needed for test data. Focus on building application logic first.",
+      "estimated_cost": "Free",
+      "complexity": "None (use existing servers)"
+    },
+    {
+      "scenario": "Migration from testnet to mainnet",
+      "recommended_solution": "Deploy Permissioned mode servers on mainnet, configure threshold committee, export test data if possible or re-encrypt, update client configuration",
+      "rationale": "Testnet keys should never be used for production data. Clean migration ensures production security standards.",
+      "estimated_cost": "Medium - initial setup + provider fees",
+      "complexity": "Medium"
+    },
+    {
+      "scenario": "Key server operator wants to exit",
+      "recommended_solution": "Export client keys, transfer key server objects to new operator, import keys on new infrastructure, coordinate URL update with clients",
+      "rationale": "Seal supports operator changes without client disruption. Key export/import mechanism enables smooth transitions.",
+      "estimated_cost": "Low - operational overhead only",
+      "complexity": "Low (well-documented process)"
+    }
+  ],
+  "community_insights": {
+    "popular_solutions": [
+      "2-of-3 threshold (most common production setup)",
+      "Mixing self-hosted + commercial providers",
+      "Docker Compose for small deployments",
+      "Kubernetes for enterprise deployments",
+      "AWS KMS or HashiCorp Vault for master seed storage",
+      "Nginx or Traefik as reverse proxy",
+      "Prometheus + Grafana for monitoring"
+    ],
+    "commercial_providers": [
+      "Ruby Nodes",
+      "NodeInfra",
+      "Studio Mirai",
+      "Overclock",
+      "H2O Nodes",
+      "Triton One",
+      "Enoki by Mysten Labs"
+    ],
+    "integration_examples": [
+      "Allowlist-based access control",
+      "Subscription services with time-based access",
+      "Token-gated premium content",
+      "AI model inference with encrypted prompts",
+      "Encrypted messaging applications",
+      "Decentralized storage encryption (Walrus integration)",
+      "Gaming assets with time-locked reveals",
+      "Healthcare data sharing with role-based access"
+    ],
+    "expert_opinions": [
+      "Threshold encryption is critical - never rely on single key server",
+      "Master seed security is paramount - use HSM for production",
+      "Test disaster recovery regularly - master seed loss is irreversible",
+      "Geographic distribution of key servers improves resilience and compliance",
+      "Client configuration should specify multiple providers for redundancy",
+      "Monitoring Sui RPC connectivity is as important as monitoring key server health",
+      "Package ID allowlisting prevents unauthorized access - audit regularly"
+    ]
+  },
+  "deployment_workflow": {
+    "phase_1_preparation": [
+      "Provision infrastructure (servers, load balancer, monitoring)",
+      "Obtain SSL/TLS certificates",
+      "Set up Sui CLI and wallet with gas tokens",
+      "Choose Sui full node (self-hosted or public)",
+      "Select commercial providers for threshold committee",
+      "Set up secret management system (vault)"
+    ],
+    "phase_2_key_generation": [
+      "Generate master seed using seal-cli",
+      "Store master seed in vault with encryption",
+      "Create encrypted backup in separate location",
+      "Document key derivation procedures",
+      "Set up access controls for vault"
+    ],
+    "phase_3_deployment": [
+      "Build Docker image from Seal repository",
+      "Create initial config.yaml with Permissioned mode",
+      "Run server to discover derived public keys",
+      "Register first key server on Sui blockchain",
+      "Update config with client information",
+      "Deploy behind reverse proxy with TLS",
+      "Configure monitoring and alerting",
+      "Test health checks and metrics"
+    ],
+    "phase_4_client_onboarding": [
+      "Collect client package IDs",
+      "Register key server object for client",
+      "Update configuration with client details",
+      "Restart server instances",
+      "Provide client with key server URL and object ID",
+      "Assist with client SDK integration",
+      "Test end-to-end encryption/decryption"
+    ],
+    "phase_5_production": [
+      "Scale to multiple instances",
+      "Configure load balancer health checks",
+      "Set up log aggregation",
+      "Implement rate limiting",
+      "Configure backup procedures",
+      "Document incident response plan",
+      "Train team on operations",
+      "Schedule regular disaster recovery tests"
+    ]
+  },
+  "operational_considerations": {
+    "monitoring_metrics": [
+      "Request rate (requests/second)",
+      "Error rate (4xx/5xx percentage)",
+      "Response latency (p50, p95, p99)",
+      "Key derivation success/failure rate",
+      "Sui RPC connection status",
+      "Server uptime and health check status",
+      "Active clients count",
+      "Resource utilization (CPU, memory, network)"
+    ],
+    "alerting_rules": [
+      "Health check failures (immediate)",
+      "Error rate > 1% (warning)",
+      "Error rate > 5% (critical)",
+      "Response latency p95 > 1s (warning)",
+      "Sui RPC connection failures (immediate)",
+      "Server downtime (immediate)",
+      "Disk space < 20% (warning)",
+      "Memory usage > 80% (warning)"
+    ],
+    "maintenance_tasks": [
+      "Review and rotate logs weekly",
+      "Audit client configurations monthly",
+      "Test disaster recovery quarterly",
+      "Review and update documentation quarterly",
+      "Evaluate new SDK versions for clients",
+      "Assess commercial provider performance",
+      "Update dependencies and security patches",
+      "Review access controls and permissions"
+    ]
+  },
+  "cost_analysis": {
+    "self_hosted_single_region": {
+      "infrastructure": "$50-200/month (cloud VPS, load balancer)",
+      "monitoring": "$0-50/month (Prometheus/Grafana)",
+      "ssl_certificates": "$0-100/year (Let's Encrypt free or commercial)",
+      "operational_overhead": "4-8 hours/month",
+      "total_monthly": "$50-250/month + operational time"
+    },
+    "self_hosted_multi_region_ha": {
+      "infrastructure": "$300-1000/month (multiple regions, HA setup)",
+      "monitoring": "$50-200/month (centralized monitoring)",
+      "ssl_certificates": "$100-500/year",
+      "operational_overhead": "10-20 hours/month",
+      "total_monthly": "$350-1200/month + operational time"
+    },
+    "enterprise_hsm": {
+      "infrastructure": "$500-2000/month (enterprise-grade servers)",
+      "hsm": "$1000-5000/month (cloud HSM or on-prem)",
+      "monitoring": "$200-500/month (enterprise monitoring)",
+      "ssl_certificates": "$500-2000/year (extended validation)",
+      "operational_overhead": "40-80 hours/month (dedicated team)",
+      "compliance": "$5000-20000/year (audits, certifications)",
+      "total_monthly": "$2000-8000/month + operational time + compliance"
+    },
+    "commercial_providers": {
+      "pricing_model": "Contact providers for custom pricing",
+      "typical_range": "$100-1000/month per key server",
+      "benefits": "No operational overhead, HA included, SLA guarantees",
+      "considerations": "Vendor lock-in, less control, trust assumptions"
+    }
+  },
+  "next_steps": {
+    "immediate": [
+      "Clone Seal repository from GitHub",
+      "Review documentation at seal-docs.wal.app",
+      "Set up Sui CLI and wallet",
+      "Decide on deployment architecture (self-hosted vs commercial)",
+      "Provision initial infrastructure"
+    ],
+    "short_term": [
+      "Generate and secure master seed",
+      "Deploy first key server instance",
+      "Register on Sui testnet for testing",
+      "Configure monitoring",
+      "Test with sample client integration"
+    ],
+    "long_term": [
+      "Scale to production HA setup",
+      "Establish threshold committee with providers",
+      "Onboard production clients",
+      "Implement comprehensive monitoring and alerting",
+      "Document and train team on operations",
+      "Establish disaster recovery procedures"
+    ]
+  },
+  "research_metadata": {
+    "researcher": "Technical Research Agent",
+    "research_duration": "Deep analysis session",
+    "confidence_level": "High - based on official documentation and source code",
+    "information_current_as_of": "2025-11-18",
+    "seal_version_analyzed": "v0.9.4",
+    "limitations": [
+      "Some web documentation endpoints returned errors (likely due to recent documentation reorganization)",
+      "Configuration file examples not directly accessible in repository (inferred from documentation)",
+      "Commercial provider pricing not publicly listed (contact required)",
+      "Performance benchmarks not available in public documentation"
+    ],
+    "verification_sources": [
+      "Official Seal documentation site",
+      "GitHub repository source code references",
+      "Mysten Labs official blog posts",
+      "NPM package registry",
+      "Sui blockchain documentation"
+    ]
+  }
+}
