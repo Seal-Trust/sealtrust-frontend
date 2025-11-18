@@ -58,6 +58,24 @@ export function DatasetDownload({
       const encryptedArrayBuffer = await walrusService.downloadFromWalrus(walrusBlobId);
       console.log('✅ Downloaded encrypted blob:', encryptedArrayBuffer.byteLength, 'bytes');
 
+      // DEBUG: Inspect the downloaded data structure
+      const uint8View = new Uint8Array(encryptedArrayBuffer);
+      console.log('🔍 First 64 bytes of encrypted data (hex):');
+      console.log(Array.from(uint8View.slice(0, 64))
+        .map(b => b.toString(16).padStart(2, '0'))
+        .join(' ')
+      );
+
+      // Check if this might be plain text instead of encrypted data
+      const textPreview = new TextDecoder('utf-8', { fatal: false }).decode(uint8View.slice(0, 200));
+      console.log('🔍 Data preview (as text):', textPreview);
+
+      // Check specific BCS offsets that might contain the enum
+      console.log('🔍 Bytes at various offsets:');
+      console.log('  [0-4]:', Array.from(uint8View.slice(0, 4)).map(b => `0x${b.toString(16).padStart(2, '0')}`).join(' '));
+      console.log('  [4-8]:', Array.from(uint8View.slice(4, 8)).map(b => `0x${b.toString(16).padStart(2, '0')}`).join(' '));
+      console.log('  Total size:', encryptedArrayBuffer.byteLength, 'bytes');
+
       // Step 2: Decrypt with Seal (handles session key + approval tx automatically)
       setStep('decrypting');
       setProgress('Decrypting with Seal (building approval transaction)...');
@@ -103,12 +121,12 @@ export function DatasetDownload({
 
       // Provide more user-friendly error messages
       if (err instanceof Error) {
-        if (err.message.includes('incompatible version')) {
-          errorMessage = '⚠️ Version Incompatibility: This dataset was encrypted with an older version. It needs to be re-uploaded.';
-        } else if (err.message.includes('Encryption format mismatch')) {
-          errorMessage = '⚠️ Format Issue: The encrypted data format is incompatible. Please contact the dataset owner.';
+        if (err.message.includes('Unknown value') && err.message.includes('enum')) {
+          errorMessage = '⚠️ Corrupted Data: This dataset was uploaded with an old version of the app and cannot be decrypted. Please ask the owner to re-upload it.';
         } else if (err.message.includes('User not in allowlist')) {
           errorMessage = '🔒 Access Denied: You are not authorized to decrypt this dataset.';
+        } else if (err.message.includes('Session key')) {
+          errorMessage = '🔑 Session Error: Please try again. Your session may have expired.';
         }
       }
 
@@ -222,10 +240,10 @@ export function DatasetDownload({
           {step === 'error' && (
             <div className="bg-red-50 border border-red-200 rounded-lg p-3 space-y-2">
               <p className="text-sm text-red-900">{error}</p>
-              {error.includes('Version Incompatibility') && (
+              {error.includes('Corrupted Data') && (
                 <p className="text-xs text-red-700">
-                  <strong>What happened:</strong> The Seal encryption library was recently upgraded from v0.5.2 to v0.9.4.
-                  Datasets encrypted with the old version cannot be decrypted with the new version.
+                  <strong>What happened:</strong> This dataset was uploaded before a critical fix was applied.
+                  The encrypted data cannot be decrypted and needs to be re-uploaded.
                 </p>
               )}
             </div>

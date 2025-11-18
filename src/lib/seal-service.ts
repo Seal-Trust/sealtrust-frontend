@@ -102,6 +102,16 @@ export class SealService {
 
       console.log('Encryption complete. Encrypted size:', encrypted.encryptedObject.length);
 
+      // DEBUG: Inspect encrypted data structure
+      console.log('🔐 First 64 bytes of encrypted data (hex):');
+      console.log(Array.from(encrypted.encryptedObject.slice(0, 64))
+        .map(b => b.toString(16).padStart(2, '0'))
+        .join(' ')
+      );
+      console.log('🔐 Encrypted data type:', encrypted.encryptedObject.constructor.name);
+      console.log('🔐 Bytes at [0-4]:', Array.from(encrypted.encryptedObject.slice(0, 4))
+        .map(b => `0x${b.toString(16).padStart(2, '0')}`).join(' '));
+
       return {
         encryptedData: encrypted.encryptedObject,
         policyId,
@@ -221,20 +231,11 @@ export class SealService {
     } catch (error) {
       console.error('Decryption failed:', error);
 
-      // Check if this is a version compatibility issue
+      // Check if this is a BCS parsing error (corrupted or improperly stored data)
       if (error instanceof Error && error.message.includes('Unknown value') && error.message.includes('enum')) {
         throw new Error(
-          'This dataset was encrypted with an incompatible version of Seal. ' +
-          'The dataset needs to be re-uploaded with the current version. ' +
-          'This typically happens after system upgrades.'
-        );
-      }
-
-      // Check for other known issues
-      if (error instanceof Error && error.message.includes('IBEEncryptions')) {
-        throw new Error(
-          'Encryption format mismatch. The encrypted data format is not compatible ' +
-          'with the current Seal version (0.9.4). Please ask the dataset owner to re-upload.'
+          'Corrupted encrypted data detected. This dataset was uploaded before a critical bug fix ' +
+          'and cannot be decrypted. Please ask the owner to re-upload the dataset.'
         );
       }
 

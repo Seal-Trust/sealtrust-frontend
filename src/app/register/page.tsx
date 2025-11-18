@@ -441,6 +441,15 @@ export default function RegisterPage() {
         setProgress('Uploading encrypted blob to Walrus...');
         // Ensure encryptedData is properly typed as Uint8Array
         const encryptedBlob = new Uint8Array(encryptedData);
+
+        // DEBUG: Log what we're uploading
+        console.log('📤 Uploading to Walrus:');
+        console.log('  Encrypted data size:', encryptedBlob.length, 'bytes');
+        console.log('  First 64 bytes (hex):', Array.from(encryptedBlob.slice(0, 64))
+          .map(b => b.toString(16).padStart(2, '0'))
+          .join(' ')
+        );
+
         const uploadResult = await walrusService.uploadToWalrus(
           new File([encryptedBlob], `${datasetFile.name}.encrypted`, { type: 'application/octet-stream' }),
           CONFIG.WALRUS_EPOCHS

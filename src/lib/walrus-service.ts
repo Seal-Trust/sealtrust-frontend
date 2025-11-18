@@ -24,12 +24,17 @@ class WalrusService {
    * @returns blobId and blobUrl for the stored file
    */
   async uploadToWalrus(file: File, epochs: number = 5): Promise<{ blobId: string; blobUrl: string }> {
-    const formData = new FormData();
-    formData.append('file', file);
+    // CRITICAL: Send raw file bytes directly, NOT wrapped in FormData
+    // If we use FormData, Walrus stores the entire multipart/form-data HTTP body
+    // (including boundaries and headers), which breaks decryption!
+    const fileBytes = await file.arrayBuffer();
 
     const response = await fetch(`${WALRUS_PUBLISHER}/v1/blobs?epochs=${epochs}`, {
       method: 'PUT',
-      body: formData,
+      body: fileBytes,
+      headers: {
+        'Content-Type': 'application/octet-stream',
+      },
     });
 
     if (!response.ok) {
