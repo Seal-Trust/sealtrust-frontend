@@ -264,10 +264,45 @@ export default function RegisterPage() {
       let capId: string;
 
       if (cachedResults.allowlistId && cachedResults.allowlistCapId) {
-        // Reuse cached allowlist from previous attempt
-        console.log('♻️ Reusing cached allowlist from previous attempt');
-        allowlistId = cachedResults.allowlistId;
-        capId = cachedResults.allowlistCapId;
+        // Verify cached allowlist exists on-chain before reusing
+        try {
+          console.log('🔍 Checking if cached allowlist exists on-chain...');
+          const obj = await suiClient.getObject({
+            id: cachedResults.allowlistId,
+            options: { showContent: true }
+          });
+
+          if (obj.data) {
+            console.log('♻️ Reusing valid cached allowlist from previous attempt');
+            allowlistId = cachedResults.allowlistId;
+            capId = cachedResults.allowlistCapId;
+          } else {
+            console.log('⚠️ Cached allowlist not found on-chain, creating new one...');
+            // Clear invalid cache
+            setCachedResults(prev => ({ ...prev, allowlistId: undefined, allowlistCapId: undefined }));
+            throw new Error('Cached allowlist invalid');
+          }
+        } catch (error) {
+          console.log('⚠️ Could not verify cached allowlist, creating new one...', error);
+          // Allowlist doesn't exist or is invalid, create a new one
+          setCachedResults(prev => ({ ...prev, allowlistId: undefined, allowlistCapId: undefined }));
+
+          setProgress('Creating Seal allowlist for access control...');
+          const result = await allowlistService.createAllowlist(
+            `Access for ${datasetFile.name}`,
+            CONFIG.SEAL_ALLOWLIST_PACKAGE_ID,
+            signAndExecuteTransaction,
+            suiClient
+          );
+          allowlistId = result.allowlistId;
+          capId = result.capId;
+
+          console.log('✅ Allowlist created:', allowlistId);
+          console.log('✅ Allowlist admin cap:', capId);
+
+          // Cache the new valid results
+          setCachedResults(prev => ({ ...prev, allowlistId, allowlistCapId: capId }));
+        }
       } else {
         setProgress('Creating Seal allowlist for access control...');
         const result = await allowlistService.createAllowlist(
@@ -287,15 +322,43 @@ export default function RegisterPage() {
       }
 
       // Add uploader to allowlist automatically so they can download their own dataset
-      setProgress('Adding uploader to allowlist...');
-      await allowlistService.addUser(
-        allowlistId,
-        capId,
-        currentAccount.address,
-        CONFIG.SEAL_ALLOWLIST_PACKAGE_ID,
-        signAndExecuteTransaction
-      );
-      console.log('✅ Uploader added to allowlist');
+      try {
+        setProgress('Adding uploader to allowlist...');
+        await allowlistService.addUser(
+          allowlistId,
+          capId,
+          currentAccount.address,
+          CONFIG.SEAL_ALLOWLIST_PACKAGE_ID,
+          signAndExecuteTransaction
+        );
+        console.log('✅ Uploader added to allowlist');
+      } catch (error) {
+        console.error('Failed to add user to allowlist:', error);
+
+        // If adding user fails (e.g., abort code 2), the cached allowlist is invalid
+        // Clear the cache and start over
+        if (cachedResults.allowlistId) {
+          console.log('⚠️ Cached allowlist is invalid, clearing cache and creating new one...');
+          setCachedResults(prev => ({
+            ...prev,
+            allowlistId: undefined,
+            allowlistCapId: undefined,
+            // Also clear dependent cached items
+            encryptedData: undefined,
+            policyId: undefined,
+            originalHash: undefined,
+            blobId: undefined
+          }));
+
+          toast.error('Cached allowlist was invalid. Please try again to create a new one.', { duration: 5000 });
+          setStep('input');
+          setProgress('');
+          return;
+        }
+
+        // If it wasn't a cached allowlist, this is a real error
+        throw error;
+      }
 
       // Add initial members if any were configured
       if (initialMembers.length > 0) {
@@ -499,10 +562,19 @@ export default function RegisterPage() {
       const errorMessage = error instanceof Error ? error.message : 'Registration failed';
       toast.error(errorMessage);
 
-      // Don't clear cache - allow retry
+      // Don't clear cache automatically - allow retry
       // Show helpful message about cached results
       if (Object.keys(cachedResults).length > 0) {
-        toast.info('Progress saved. You can retry from where you left off.', { duration: 5000 });
+        toast.info('Progress saved. You can retry from where you left off.', {
+          duration: 5000,
+          action: {
+            label: 'Clear Cache',
+            onClick: () => {
+              setCachedResults({});
+              toast.success('Cache cleared. Starting fresh.');
+            }
+          }
+        });
       }
 
       setStep('input');
@@ -714,6 +786,29 @@ export default function RegisterPage() {
                   </div>
                 ) : (
                   <div className="space-y-4">
+                    {/* Cache Status Indicator */}
+                    {Object.keys(cachedResults).length > 0 && (
+                      <div className="bg-blue-50 border border-blue-200 rounded-xl p-3 flex items-center justify-between">
+                        <div>
+                          <p className="text-sm font-semibold text-blue-900">
+                            💾 Progress Cached
+                          </p>
+                          <p className="text-xs text-blue-700">
+                            Previous progress will be reused on retry
+                          </p>
+                        </div>
+                        <button
+                          onClick={() => {
+                            setCachedResults({});
+                            toast.success('Cache cleared. Starting fresh.');
+                          }}
+                          className="px-3 py-1.5 bg-white text-blue-600 border border-blue-300 rounded-lg text-xs font-medium hover:bg-blue-50 transition-colors"
+                        >
+                          Clear Cache
+                        </button>
+                      </div>
+                    )}
+
                     {/* Dataset URL Input */}
                     <div>
                       <label className="text-sm font-medium text-foreground mb-1.5 block">
