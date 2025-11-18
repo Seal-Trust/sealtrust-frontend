@@ -259,6 +259,8 @@ export class SealService {
     console.log('Building Seal approval transaction...');
     console.log('  Policy ID:', policyId);
     console.log('  Allowlist ID:', allowlistId);
+    console.log('  Sender address:', address);
+
     const { Transaction } = await import('@mysten/sui/transactions');
     const tx = new Transaction();
 
@@ -274,7 +276,12 @@ export class SealService {
     });
 
     // Build transaction bytes for Seal verification
-    const txBytes = await tx.build({ client: suiClient });
+    // IMPORTANT: Seal only needs the transaction kind for verification, not the full transaction
+    const txBytes = await tx.build({
+      client: suiClient,
+      sender: address,  // Required in @mysten/sui 1.45.0
+      onlyTransactionKind: true,  // Critical: Seal needs only transaction kind bytes
+    });
     console.log('Approval transaction built:', txBytes.length, 'bytes');
 
     // Convert ArrayBuffer to Uint8Array
