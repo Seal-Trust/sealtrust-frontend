@@ -74,11 +74,36 @@ export class AllowlistService {
 
     console.log('Transaction digest:', result.digest);
 
-    // Fetch transaction details to get object changes
-    const txResponse = await suiClient.getTransactionBlock({
-      digest: result.digest,
-      options: { showObjectChanges: true },
-    });
+    // Fetch transaction details with retry logic (RPC indexing delay)
+    let txResponse;
+    let retries = 0;
+    const maxRetries = 10;
+    const retryDelay = 500; // 500ms between retries
+
+    while (retries < maxRetries) {
+      try {
+        txResponse = await suiClient.getTransactionBlock({
+          digest: result.digest,
+          options: { showObjectChanges: true },
+        });
+        break; // Success, exit retry loop
+      } catch (error) {
+        if (error instanceof Error && error.message.includes('Could not find the referenced transaction')) {
+          retries++;
+          if (retries >= maxRetries) {
+            throw new Error(`Transaction ${result.digest} not indexed after ${maxRetries} retries. Please try again.`);
+          }
+          console.log(`Transaction not indexed yet, retrying (${retries}/${maxRetries})...`);
+          await new Promise(resolve => setTimeout(resolve, retryDelay));
+        } else {
+          throw error; // Different error, rethrow
+        }
+      }
+    }
+
+    if (!txResponse) {
+      throw new Error('Failed to fetch transaction details after retries');
+    }
 
     console.log('Allowlist creation result:', txResponse);
 
