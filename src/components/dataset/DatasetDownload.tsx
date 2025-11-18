@@ -99,11 +99,23 @@ export function DatasetDownload({
 
     } catch (err) {
       console.error('Download/decrypt failed:', err);
-      const errorMessage = err instanceof Error ? err.message : 'Failed to download dataset';
+      let errorMessage = err instanceof Error ? err.message : 'Failed to download dataset';
+
+      // Provide more user-friendly error messages
+      if (err instanceof Error) {
+        if (err.message.includes('incompatible version')) {
+          errorMessage = '⚠️ Version Incompatibility: This dataset was encrypted with an older version. It needs to be re-uploaded.';
+        } else if (err.message.includes('Encryption format mismatch')) {
+          errorMessage = '⚠️ Format Issue: The encrypted data format is incompatible. Please contact the dataset owner.';
+        } else if (err.message.includes('User not in allowlist')) {
+          errorMessage = '🔒 Access Denied: You are not authorized to decrypt this dataset.';
+        }
+      }
+
       setError(errorMessage);
       setStep('error');
       setProgress('');
-      toast.error(errorMessage);
+      toast.error(errorMessage, { duration: 8000 });
     }
   };
 
@@ -208,8 +220,14 @@ export function DatasetDownload({
 
           {/* Error Message */}
           {step === 'error' && (
-            <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+            <div className="bg-red-50 border border-red-200 rounded-lg p-3 space-y-2">
               <p className="text-sm text-red-900">{error}</p>
+              {error.includes('Version Incompatibility') && (
+                <p className="text-xs text-red-700">
+                  <strong>What happened:</strong> The Seal encryption library was recently upgraded from v0.5.2 to v0.9.4.
+                  Datasets encrypted with the old version cannot be decrypted with the new version.
+                </p>
+              )}
             </div>
           )}
 

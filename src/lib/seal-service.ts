@@ -206,17 +206,40 @@ export class SealService {
   ): Promise<Uint8Array> {
     console.log('Decrypting dataset with Seal...');
 
-    // Create a fresh SealClient for this operation
-    const client = this.createSealClient(suiClient);
+    try {
+      // Create a fresh SealClient for this operation
+      const client = this.createSealClient(suiClient);
 
-    const decrypted = await client.decrypt({
-      data: encryptedData,
-      sessionKey,
-      txBytes
-    });
+      const decrypted = await client.decrypt({
+        data: encryptedData,
+        sessionKey,
+        txBytes
+      });
 
-    console.log('Decryption complete. Size:', decrypted.length);
-    return decrypted;
+      console.log('Decryption complete. Size:', decrypted.length);
+      return decrypted;
+    } catch (error) {
+      console.error('Decryption failed:', error);
+
+      // Check if this is a version compatibility issue
+      if (error instanceof Error && error.message.includes('Unknown value') && error.message.includes('enum')) {
+        throw new Error(
+          'This dataset was encrypted with an incompatible version of Seal. ' +
+          'The dataset needs to be re-uploaded with the current version. ' +
+          'This typically happens after system upgrades.'
+        );
+      }
+
+      // Check for other known issues
+      if (error instanceof Error && error.message.includes('IBEEncryptions')) {
+        throw new Error(
+          'Encryption format mismatch. The encrypted data format is not compatible ' +
+          'with the current Seal version (0.9.4). Please ask the dataset owner to re-upload.'
+        );
+      }
+
+      throw error;
+    }
   }
 
   /**
