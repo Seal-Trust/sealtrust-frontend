@@ -15,10 +15,21 @@ export const CONFIG = {
   // This includes the seal_approve functions for access control
   SEAL_PACKAGE_ID: process.env.NEXT_PUBLIC_SEAL_PACKAGE_ID || "0xc5ce2742cac46421b62028557f1d7aea8a4c50f651379a79afdf12cd88628807",
   SEAL_ALLOWLIST_PACKAGE_ID: process.env.NEXT_PUBLIC_SEAL_ALLOWLIST_PACKAGE_ID || "0xc5ce2742cac46421b62028557f1d7aea8a4c50f651379a79afdf12cd88628807",
-  SEAL_SERVERS: [
-    "https://seal-server-1.walrus-testnet.walrus.space",
-    "https://seal-server-2.walrus-testnet.walrus.space"
+
+  // Seal Key Servers (as of 2025) - can be overridden via environment variable
+  // Verified providers: Mysten Labs, Ruby Nodes, NodeInfra, Overclock, H2O Nodes
+  SEAL_KEY_SERVERS: process.env.NEXT_PUBLIC_SEAL_KEY_SERVERS?.split(',') || [
+    '0x73d05d62c18d9374e3ea529e8e0ed6161da1a141a94d3f76ae3fe4e99356db75', // mysten-testnet-1
+    '0xf5d14a81a982144ae441cd7d64b09027f116a468bd36e7eca494f750591623c8', // mysten-testnet-2
+    '0x6068c0acb197dddbacd4746a9de7f025b2ed5a5b6c1b1ab44dade4426d141da2', // Ruby Nodes
+    '0x5466b7df5c15b508678d51496ada8afab0d6f70a01c10613123382b1b8131007', // NodeInfra
+    '0x9c949e53c36ab7a9c484ed9e8b43267a77d4b8d70e79aa6b39042e3d4c434105', // Overclock
+    '0x39cef09b24b667bc6ed54f7159d82352fe2d5dd97ca9a5beaa1d21aa774f25a2', // H2O Nodes
   ],
+
+  // Enable key server verification in production for security
+  SEAL_KEY_SERVER_VERIFICATION: process.env.NODE_ENV === 'production' ||
+                                 process.env.NEXT_PUBLIC_SEAL_VERIFY_SERVERS === 'true',
 
   // Session key TTL (minutes)
   SESSION_KEY_TTL: 10,

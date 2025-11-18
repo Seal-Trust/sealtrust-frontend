@@ -1,61 +1,30 @@
 import { SealClient, SessionKey } from '@mysten/seal';
 import { get, set } from 'idb-keyval';
-import { SuiClient, getFullnodeUrl } from '@mysten/sui/client';
+import { SuiClient } from '@mysten/sui/client';
 import { fromHex } from '@mysten/sui/utils';
+import { allowlistService } from './allowlist-service';
+import { CONFIG } from './constants';
 
-// Official Seal Testnet Key Servers (as of 2025)
-// Verified providers: Mysten Labs, Ruby Nodes, NodeInfra, Overclock, H2O Nodes
-const TESTNET_KEY_SERVERS = [
-  '0x73d05d62c18d9374e3ea529e8e0ed6161da1a141a94d3f76ae3fe4e99356db75', // mysten-testnet-1
-  '0xf5d14a81a982144ae441cd7d64b09027f116a468bd36e7eca494f750591623c8', // mysten-testnet-2
-  '0x6068c0acb197dddbacd4746a9de7f025b2ed5a5b6c1b1ab44dade4426d141da2', // Ruby Nodes
-  '0x5466b7df5c15b508678d51496ada8afab0d6f70a01c10613123382b1b8131007', // NodeInfra
-  '0x9c949e53c36ab7a9c484ed9e8b43267a77d4b8d70e79aa6b39042e3d4c434105', // Overclock
-  '0x39cef09b24b667bc6ed54f7159d82352fe2d5dd97ca9a5beaa1d21aa774f25a2', // H2O Nodes
-];
+// Type alias for clarity - SealClient expects a client with experimental extensions
+// The dapp-kit's useSuiClient() provides this compatible type
+type SealCompatibleClient = SuiClient;
 
 export class SealService {
-  private suiClient: SuiClient | null = null;
-
   /**
-   * Initialize the service with a SuiClient
-   * Must be called before using encrypt/decrypt operations
+   * Create a SealClient instance for operations
+   * Following the official Seal pattern where clients are created per-operation
+   *
+   * @param suiClient - SuiClient instance (typically from useSuiClient hook)
+   * @returns Configured SealClient instance
    */
-  async initialize(suiClient?: SuiClient): Promise<void> {
-    // If a suiClient is provided, use it. Otherwise create a new one
-    if (suiClient) {
-      this.suiClient = suiClient;
-      console.log('🔐 Using provided SuiClient');
-    } else {
-      // Create a SuiClient exactly as shown in the Seal examples
-      this.suiClient = new SuiClient({
-        url: getFullnodeUrl('testnet')
-      });
-      console.log('🔐 Created new SuiClient for testnet');
-    }
-
-    console.log('✅ Seal service initialized');
-  }
-
-  /**
-   * Create a fresh SealClient instance for each operation
-   * This matches the pattern from the Seal examples where the client
-   * is created in the component, not stored
-   */
-  private createSealClient(): SealClient {
-    if (!this.suiClient) {
-      throw new Error('SealService not initialized. Call initialize() first.');
-    }
-
-    // Create a fresh SealClient instance each time
-    // This ensures the suiClient reference is properly maintained
+  private createSealClient(suiClient: SealCompatibleClient): SealClient {
     return new SealClient({
-      suiClient: this.suiClient,
-      serverConfigs: TESTNET_KEY_SERVERS.map(objectId => ({
+      suiClient: suiClient as any, // Type assertion needed due to experimental extensions
+      serverConfigs: CONFIG.SEAL_KEY_SERVERS.map(objectId => ({
         objectId,
         weight: 1, // Equal weight for all servers
       })),
-      verifyKeyServers: false, // Set to false for testnet to avoid connection issues
+      verifyKeyServers: CONFIG.SEAL_KEY_SERVER_VERIFICATION,
     });
   }
 
@@ -92,12 +61,14 @@ export class SealService {
    * @param file - File to encrypt
    * @param packageId - Seal package ID
    * @param allowlistId - Allowlist object ID (namespace for policy ID)
+   * @param suiClient - SuiClient instance from dapp-kit
    * @returns Encrypted data, policy ID, and original hash
    */
   async encryptDataset(
     file: File,
     packageId: string,
-    allowlistId: string
+    allowlistId: string,
+    suiClient: SealCompatibleClient
   ): Promise<{
     encryptedData: Uint8Array;
     policyId: string;
@@ -111,10 +82,7 @@ export class SealService {
     console.log('Original file hash (before encryption):', originalHash);
 
     // 3. Generate policy ID with allowlist namespace prefix
-    // Import allowlistService to avoid code duplication
-    const { allowlistService } = await import('./allowlist-service');
     const policyId = allowlistService.generatePolicyId(allowlistId);
-
     console.log('Generated Seal policy ID (hex):', policyId);
 
     // 4. Encrypt with Seal
@@ -124,7 +92,7 @@ export class SealService {
     console.log('  Data size:', fileBuffer.byteLength, 'bytes');
 
     // Create a fresh SealClient for this operation
-    const client = this.createSealClient();
+    const client = this.createSealClient(suiClient);
 
     try {
       const encrypted = await client.encrypt({
@@ -157,15 +125,15 @@ export class SealService {
    * This minimizes wallet popups for better UX
    * @param packageId - Seal package ID
    * @param address - User's wallet address
-   * @param suiClient - Sui client instance
-   * @param signPersonalMessage - Function to sign personal message
+   * @param suiClient - SuiClient instance from dapp-kit
+   * @param signPersonalMessage - Function to sign personal message (from dapp-kit)
    * @returns Session key
    */
   async getOrCreateSessionKey(
     packageId: string,
     address: string,
-    suiClient: SuiClient,
-    signPersonalMessage: (msg: { message: string }) => Promise<{ signature: string }>
+    suiClient: SealCompatibleClient,
+    signPersonalMessage: (msg: { message: Uint8Array }) => Promise<{ signature: string }>
   ): Promise<SessionKey> {
     const key = `sessionKey_${packageId}_${address}`;
 
@@ -174,7 +142,7 @@ export class SealService {
       const stored = await get(key);
       if (stored) {
         console.log('Found stored session key, checking validity...');
-        const imported = await SessionKey.import(stored, suiClient); // No type cast needed
+        const imported = await SessionKey.import(stored, suiClient as any); // Type cast for experimental extensions
         if (!imported.isExpired()) {
           console.log('✅ Reusing existing session key (no wallet popup needed)');
           return imported;
@@ -190,17 +158,17 @@ export class SealService {
     const sessionKey = await SessionKey.create({
       address,
       packageId,
-      ttlMin: 10,
-      suiClient: suiClient, // Pass directly, no type cast needed
+      ttlMin: CONFIG.SESSION_KEY_TTL,
+      suiClient: suiClient as any, // Type cast for experimental extensions
     });
 
     // Get user signature (wallet popup - only happens every 10 min)
     console.log('⚠️ Wallet signature required for session key...');
-    // Convert Uint8Array message to base64 string for signing
+
+    // Pass the Uint8Array message directly - no base64 conversion!
     const messageBytes = sessionKey.getPersonalMessage();
-    const messageBase64 = btoa(String.fromCharCode(...messageBytes));
     const { signature } = await signPersonalMessage({
-      message: messageBase64
+      message: messageBytes // Pass Uint8Array directly as per Seal examples
     });
 
     await sessionKey.setPersonalMessageSignature(signature);
@@ -229,17 +197,19 @@ export class SealService {
    * @param encryptedData - Encrypted data from Walrus
    * @param sessionKey - Valid session key
    * @param txBytes - Transaction bytes for approval
+   * @param suiClient - SuiClient instance from dapp-kit
    * @returns Decrypted data
    */
   async decryptDataset(
     encryptedData: Uint8Array,
     sessionKey: SessionKey,
-    txBytes: Uint8Array
+    txBytes: Uint8Array,
+    suiClient: SealCompatibleClient
   ): Promise<Uint8Array> {
     console.log('Decrypting dataset with Seal...');
 
     // Create a fresh SealClient for this operation
-    const client = this.createSealClient();
+    const client = this.createSealClient(suiClient);
 
     const decrypted = await client.decrypt({
       data: encryptedData,
@@ -264,8 +234,8 @@ export class SealService {
    * @param packageId - Seal package ID
    * @param allowlistPackageId - Seal allowlist package ID for approval
    * @param address - User's wallet address
-   * @param suiClient - Sui client instance
-   * @param signPersonalMessage - Function to sign personal message
+   * @param suiClient - SuiClient instance from dapp-kit
+   * @param signPersonalMessage - Function to sign personal message (from dapp-kit)
    * @returns Decrypted data as Uint8Array
    */
   async downloadAndDecryptDataset(
@@ -275,8 +245,8 @@ export class SealService {
     packageId: string,
     allowlistPackageId: string,
     address: string,
-    suiClient: SuiClient,
-    signPersonalMessage: (msg: { message: string }) => Promise<{ signature: string }>
+    suiClient: SealCompatibleClient,
+    signPersonalMessage: (msg: { message: Uint8Array }) => Promise<{ signature: string }>
   ): Promise<Uint8Array> {
     // Get or create session key (handles IndexedDB persistence)
     const sessionKey = await this.getOrCreateSessionKey(
@@ -313,7 +283,7 @@ export class SealService {
     const encryptedData = new Uint8Array(encryptedBlob);
 
     // Decrypt with proper approval
-    return this.decryptDataset(encryptedData, sessionKey, txBytes);
+    return this.decryptDataset(encryptedData, sessionKey, txBytes, suiClient);
   }
 
   /**

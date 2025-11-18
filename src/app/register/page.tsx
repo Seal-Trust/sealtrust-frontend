@@ -258,25 +258,33 @@ export default function RegisterPage() {
         datasetFile = file!;
       }
 
-      // Step 1: Initialize Seal with the suiClient from dapp-kit
-      // This ensures compatibility with the rest of the app
-      setProgress('Initializing Seal encryption service...');
-      await sealService.initialize(suiClient);
+      // Step 1: Create allowlist for access control (with cache recovery)
+      // Note: Seal client is now created per-operation with suiClient passed directly
+      let allowlistId: string;
+      let capId: string;
 
-      // Step 2: Create allowlist for access control
-      setProgress('Creating Seal allowlist for access control...');
-      const { allowlistId, capId } = await allowlistService.createAllowlist(
-        `Access for ${datasetFile.name}`,
-        CONFIG.SEAL_ALLOWLIST_PACKAGE_ID,
-        signAndExecuteTransaction,
-        suiClient
-      );
+      if (cachedResults.allowlistId && cachedResults.allowlistCapId) {
+        // Reuse cached allowlist from previous attempt
+        console.log('♻️ Reusing cached allowlist from previous attempt');
+        allowlistId = cachedResults.allowlistId;
+        capId = cachedResults.allowlistCapId;
+      } else {
+        setProgress('Creating Seal allowlist for access control...');
+        const result = await allowlistService.createAllowlist(
+          `Access for ${datasetFile.name}`,
+          CONFIG.SEAL_ALLOWLIST_PACKAGE_ID,
+          signAndExecuteTransaction,
+          suiClient
+        );
+        allowlistId = result.allowlistId;
+        capId = result.capId;
 
-      console.log('✅ Allowlist created:', allowlistId);
-      console.log('✅ Allowlist admin cap:', capId);
+        console.log('✅ Allowlist created:', allowlistId);
+        console.log('✅ Allowlist admin cap:', capId);
 
-      // Cache allowlist for error recovery
-      setCachedResults(prev => ({ ...prev, allowlistId, allowlistCapId: capId }));
+        // Cache immediately for error recovery
+        setCachedResults(prev => ({ ...prev, allowlistId, allowlistCapId: capId }));
+      }
 
       // Add uploader to allowlist automatically so they can download their own dataset
       setProgress('Adding uploader to allowlist...');
@@ -292,49 +300,78 @@ export default function RegisterPage() {
       // Add initial members if any were configured
       if (initialMembers.length > 0) {
         setProgress(`Adding ${initialMembers.length} initial member(s) to allowlist...`);
-        for (const memberAddress of initialMembers) {
-          await allowlistService.addUser(
-            allowlistId,
-            capId,
-            memberAddress,
-            CONFIG.SEAL_ALLOWLIST_PACKAGE_ID,
-            signAndExecuteTransaction
-          );
-          console.log('✅ Added member to allowlist:', memberAddress);
-        }
+
+        // Use Promise.all for parallel operations (performance improvement)
+        await Promise.all(
+          initialMembers.map(async (memberAddress) => {
+            await allowlistService.addUser(
+              allowlistId,
+              capId,
+              memberAddress,
+              CONFIG.SEAL_ALLOWLIST_PACKAGE_ID,
+              signAndExecuteTransaction
+            );
+            console.log('✅ Added member to allowlist:', memberAddress);
+          })
+        );
       }
 
-      // Step 3 & 4: Hash and Encrypt with Seal (using allowlist namespace)
+      // Step 2 & 3: Hash and Encrypt with Seal (using allowlist namespace)
       // NOTE: encryptDataset now returns originalHash to avoid double hashing!
-      setStep('encrypting');
-      setProgress('Encrypting dataset with Seal (includes hashing)...');
+      let encryptedData: Uint8Array;
+      let policyId: string;
+      let originalHash: string;
 
-      const { encryptedData, policyId, originalHash } = await sealService.encryptDataset(
-        datasetFile,
-        CONFIG.SEAL_PACKAGE_ID,
-        allowlistId
-      );
+      if (cachedResults.encryptedData && cachedResults.policyId && cachedResults.originalHash) {
+        // Reuse cached encryption from previous attempt
+        console.log('♻️ Reusing cached encryption from previous attempt');
+        encryptedData = cachedResults.encryptedData;
+        policyId = cachedResults.policyId;
+        originalHash = cachedResults.originalHash;
+      } else {
+        setStep('encrypting');
+        setProgress('Encrypting dataset with Seal (includes hashing)...');
 
-      // Cache results for error recovery
-      setCachedResults(prev => ({ ...prev, originalHash, encryptedData, policyId }));
+        const encryptionResult = await sealService.encryptDataset(
+          datasetFile,
+          CONFIG.SEAL_PACKAGE_ID,
+          allowlistId,
+          suiClient  // Pass suiClient directly - no initialization needed
+        );
+        encryptedData = encryptionResult.encryptedData;
+        policyId = encryptionResult.policyId;
+        originalHash = encryptionResult.originalHash;
 
-      console.log('✅ Original hash:', originalHash);
-      console.log('✅ Encrypted. Policy ID:', policyId);
+        // Cache immediately for error recovery
+        setCachedResults(prev => ({ ...prev, originalHash, encryptedData, policyId }));
 
-      // Step 3: Upload encrypted blob to Walrus
-      setStep('uploading');
-      setProgress('Uploading encrypted blob to Walrus...');
-      // Ensure encryptedData is properly typed as Uint8Array
-      const encryptedBlob = new Uint8Array(encryptedData);
-      const { blobId } = await walrusService.uploadToWalrus(
-        new File([encryptedBlob], `${datasetFile.name}.encrypted`, { type: 'application/octet-stream' }),
-        CONFIG.WALRUS_EPOCHS
-      );
+        console.log('✅ Original hash:', originalHash);
+        console.log('✅ Encrypted. Policy ID:', policyId);
+      }
 
-      // Cache results for error recovery
-      setCachedResults(prev => ({ ...prev, blobId }));
+      // Step 3: Upload encrypted blob to Walrus (with cache recovery)
+      let blobId: string;
 
-      console.log('✅ Uploaded to Walrus. Blob ID:', blobId);
+      if (cachedResults.blobId) {
+        // Reuse cached blob ID from previous attempt
+        console.log('♻️ Reusing cached Walrus blob ID from previous attempt');
+        blobId = cachedResults.blobId;
+      } else {
+        setStep('uploading');
+        setProgress('Uploading encrypted blob to Walrus...');
+        // Ensure encryptedData is properly typed as Uint8Array
+        const encryptedBlob = new Uint8Array(encryptedData);
+        const uploadResult = await walrusService.uploadToWalrus(
+          new File([encryptedBlob], `${datasetFile.name}.encrypted`, { type: 'application/octet-stream' }),
+          CONFIG.WALRUS_EPOCHS
+        );
+        blobId = uploadResult.blobId;
+
+        // Cache immediately for error recovery
+        setCachedResults(prev => ({ ...prev, blobId }));
+
+        console.log('✅ Uploaded to Walrus. Blob ID:', blobId);
+      }
 
       // Step 4: Prepare metadata for Nautilus verification
       setStep('verifying');
