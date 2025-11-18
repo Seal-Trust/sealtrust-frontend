@@ -303,29 +303,122 @@ pnpm test
 
 ## Deployment
 
-### Build for Production
+### Production Deployment (Vercel Recommended)
+
+**Step 1: Build Locally**
 
 ```bash
 pnpm build
-```
-
-### Preview Production Build
-
-```bash
+# Test production build
 pnpm start
 ```
 
-### Environment Variables
-
-Update `.env.production` with deployed contract addresses:
+**Step 2: Deploy to Vercel**
 
 ```bash
+# Install Vercel CLI
+npm i -g vercel
+
+# Deploy
+vercel
+
+# Set environment variables in Vercel dashboard
+```
+
+**Environment Variables for Production:**
+
+```env
+# Network
+NEXT_PUBLIC_SUI_NETWORK=mainnet
+
+# Deployed Contracts
 NEXT_PUBLIC_VERIFICATION_PACKAGE=0x<deployed_package_id>
 NEXT_PUBLIC_ENCLAVE_ID=0x<enclave_config_id>
-NEXT_PUBLIC_SEAL_PACKAGE_ID=0x<seal_package_id>
+NEXT_PUBLIC_SEAL_PACKAGE_ID=0xa212c4c6c7183b911d0be8768f4cb1df7a383025b5d0ba0c014009f0f30f5f8d
 NEXT_PUBLIC_SEAL_ALLOWLIST_PACKAGE_ID=0x<allowlist_package_id>
-NEXT_PUBLIC_NAUTILUS_URL=https://nautilus.truthmarket.io
+
+# Production Services
+NEXT_PUBLIC_NAUTILUS_URL=https://nautilus.yourdomain.com
+
+# Key Servers (your production server + backups)
+NEXT_PUBLIC_SEAL_KEY_SERVERS=0xYourKeyServer,0x<verified_provider_1>,0x<verified_provider_2>
 ```
+
+**Step 3: Configure Custom Domain**
+
+In Vercel dashboard:
+1. Go to your project → Settings → Domains
+2. Add your domain (e.g., `app.truthmarket.io`)
+3. Update DNS records as instructed
+
+**Step 4: Set Up SSL**
+
+Vercel automatically provisions SSL certificates via Let's Encrypt.
+
+### Alternative: Docker Deployment
+
+**Create `Dockerfile`:**
+
+```dockerfile
+FROM node:20-alpine AS base
+
+# Install dependencies
+FROM base AS deps
+WORKDIR /app
+COPY package.json pnpm-lock.yaml ./
+RUN corepack enable pnpm && pnpm install --frozen-lockfile
+
+# Build
+FROM base AS builder
+WORKDIR /app
+COPY --from=deps /app/node_modules ./node_modules
+COPY . .
+RUN corepack enable pnpm && pnpm build
+
+# Production
+FROM base AS runner
+WORKDIR /app
+ENV NODE_ENV=production
+
+RUN addgroup --system --gid 1001 nodejs
+RUN adduser --system --uid 1001 nextjs
+
+COPY --from=builder /app/public ./public
+COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
+COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+
+USER nextjs
+EXPOSE 3000
+ENV PORT=3000
+
+CMD ["node", "server.js"]
+```
+
+**Deploy with Docker:**
+
+```bash
+# Build image
+docker build -t truthmarket-frontend:latest .
+
+# Run container
+docker run -p 3000:3000 \
+  -e NEXT_PUBLIC_SUI_NETWORK=mainnet \
+  -e NEXT_PUBLIC_NAUTILUS_URL=https://nautilus.yourdomain.com \
+  truthmarket-frontend:latest
+```
+
+### Production Checklist
+
+- [ ] Deploy Move contracts to mainnet
+- [ ] Deploy Nautilus to AWS Nitro Enclave
+- [ ] Deploy Seal key server (or use verified providers)
+- [ ] Update all environment variables
+- [ ] Test with real transactions
+- [ ] Set up monitoring (Vercel Analytics / CloudWatch)
+- [ ] Configure custom domain with SSL
+- [ ] Test wallet connections
+- [ ] Verify Seal encryption/decryption works
+- [ ] Check CSP headers allow all services
 
 ---
 
