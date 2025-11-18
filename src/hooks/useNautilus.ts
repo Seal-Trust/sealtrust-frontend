@@ -65,9 +65,9 @@ export function useNautilus() {
       const result: ProcessedDataResponse = await response.json();
 
       // Extract hash from the verification data
-      const hashBytes = result.response.data.dataset_hash;
+      const hashBytes = result.response.data.original_hash;
       const hashHex = hashBytes
-        .map(b => b.toString(16).padStart(2, "0"))
+        .map((b: number) => b.toString(16).padStart(2, "0"))
         .join("");
 
       const verification: NautilusVerification = {

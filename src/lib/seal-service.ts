@@ -1,7 +1,7 @@
 import { SealClient, SessionKey } from '@mysten/seal';
 import { get, set } from 'idb-keyval';
 import { SuiClient, getFullnodeUrl } from '@mysten/sui/client';
-import { fromHex, toHex } from '@mysten/sui/utils';
+import { fromHex } from '@mysten/sui/utils';
 
 // Official Seal Testnet Key Servers (as of 2025)
 // Verified providers: Mysten Labs, Ruby Nodes, NodeInfra, Overclock, H2O Nodes
@@ -38,7 +38,8 @@ export class SealService {
     console.log('🔐 Initializing Seal with', TESTNET_KEY_SERVERS.length, 'key servers');
 
     this.client = new SealClient({
-      suiClient: this.suiClient,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      suiClient: this.suiClient as any, // Type cast due to Seal's specific client requirements
       serverConfigs: TESTNET_KEY_SERVERS.map(objectId => ({
         objectId,
         weight: 1, // Equal weight for all servers
@@ -74,7 +75,9 @@ export class SealService {
    * @returns SHA-256 hash as hex string
    */
   async hashData(data: Uint8Array): Promise<string> {
-    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+    // Ensure data is properly typed for crypto API
+    const dataToHash = new Uint8Array(data);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', dataToHash);
     return Array.from(new Uint8Array(hashBuffer))
       .map(b => b.toString(16).padStart(2, '0'))
       .join('');
@@ -152,7 +155,8 @@ export class SealService {
       const stored = await get(key);
       if (stored) {
         console.log('Found stored session key, checking validity...');
-        const imported = await SessionKey.import(stored, suiClient);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const imported = await SessionKey.import(stored, suiClient as any);
         if (!imported.isExpired()) {
           console.log('✅ Reusing existing session key (no wallet popup needed)');
           return imported;
@@ -169,13 +173,17 @@ export class SealService {
       address,
       packageId,
       ttlMin: 10,
-      suiClient,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      suiClient: suiClient as any, // Type cast due to Seal's specific client requirements
     });
 
     // Get user signature (wallet popup - only happens every 10 min)
     console.log('⚠️ Wallet signature required for session key...');
+    // Convert Uint8Array message to base64 string for signing
+    const messageBytes = sessionKey.getPersonalMessage();
+    const messageBase64 = btoa(String.fromCharCode(...messageBytes));
     const { signature } = await signPersonalMessage({
-      message: sessionKey.getPersonalMessage()
+      message: messageBase64
     });
 
     await sessionKey.setPersonalMessageSignature(signature);
@@ -319,7 +327,9 @@ export class SealService {
    * @param mimeType - MIME type of the file
    */
   createDownloadLink(data: Uint8Array, filename: string, mimeType: string): void {
-    const blob = new Blob([data], { type: mimeType });
+    // Ensure data is properly typed for Blob constructor
+    const dataForBlob = new Uint8Array(data);
+    const blob = new Blob([dataForBlob], { type: mimeType });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;

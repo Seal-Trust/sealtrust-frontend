@@ -2,6 +2,7 @@
 
 import { QrCode, Files, CircleNotch, Warning, CheckCircle } from '@phosphor-icons/react';
 import { DatasetQR } from '@/components/dataset/DatasetQR';
+import { DatasetNFT } from '@/lib/types';
 
 interface VerificationResultPanelProps {
   computedHash: string;
@@ -9,7 +10,7 @@ interface VerificationResultPanelProps {
   isHashing?: boolean;
   verificationResult: {
     found: boolean;
-    dataset: any;
+    dataset: DatasetNFT | null;
     registrant?: string;
     tx_digest?: string;
   } | null;

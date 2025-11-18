@@ -61,6 +61,16 @@ export function DatasetDownload({
       // Step 2: Decrypt with Seal (handles session key + approval tx automatically)
       setStep('decrypting');
       setProgress('Decrypting with Seal (building approval transaction)...');
+
+      // Create a wrapper function to handle message signing with proper type conversion
+      const signPersonalMessageWrapper = async (msg: { message: string }): Promise<{ signature: string }> => {
+        // Convert string message to Uint8Array for dapp-kit
+        const encoder = new TextEncoder();
+        const messageBytes = encoder.encode(msg.message);
+        const result = await signPersonalMessage({ message: messageBytes });
+        return result;
+      };
+
       const decrypted = await sealService.downloadAndDecryptDataset(
         encryptedArrayBuffer,
         sealPolicyId,
@@ -69,7 +79,7 @@ export function DatasetDownload({
         CONFIG.SEAL_ALLOWLIST_PACKAGE_ID,
         currentAccount.address,
         suiClient,
-        signPersonalMessage
+        signPersonalMessageWrapper
       );
       console.log('✅ Decrypted:', decrypted.byteLength, 'bytes');
 
@@ -87,7 +97,9 @@ export function DatasetDownload({
       console.log('✅ Integrity verified: hash matches');
 
       // Step 4: Success - ready for download
-      const blob = new Blob([decrypted], { type: getContentType(format) });
+      // Ensure decrypted data is properly typed as Uint8Array
+      const decryptedData = new Uint8Array(decrypted);
+      const blob = new Blob([decryptedData], { type: getContentType(format) });
       setDecryptedBlob(blob);
       setStep('complete');
       setProgress('');

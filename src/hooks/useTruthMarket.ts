@@ -14,6 +14,40 @@ import {
 } from "../lib/types";
 import { hexToBytes, stringToBytes, bytesToString, bytesToHex } from "../lib/utils/crypto";
 
+// Type definitions for Sui object responses
+interface SuiObjectChange {
+  objectId: string;
+  objectType?: string;
+}
+
+interface SuiObjectContent {
+  dataType: string;
+  fields: {
+    original_hash?: number[];
+    metadata_hash?: number[];
+    walrus_blob_id?: string;
+    seal_policy_id?: string;
+    seal_allowlist_id?: string;
+    name?: string;
+    dataset_url?: string;
+    format?: string;
+    size?: string;
+    schema_version?: string;
+    verification_timestamp?: string;
+    enclave_id?: string;
+    tee_signature?: number[];
+    [key: string]: unknown;
+  };
+}
+
+interface SuiObjectOwner {
+  AddressOwner?: string;
+  ObjectOwner?: string;
+  Shared?: {
+    initial_shared_version: string;
+  };
+}
+
 /**
  * Main hook for TruthMarket blockchain operations
  */
@@ -104,11 +138,12 @@ export function useTruthMarket() {
 
       // Find the created DatasetNFT
       const createdNft = txResponse.objectChanges?.find(
-        (change: any) => change.type === "created" &&
+        (change) => change.type === "created" &&
+                        'objectType' in change &&
                         change.objectType?.includes("DatasetNFT")
       );
 
-      const nftId = (createdNft as any)?.objectId || "";
+      const nftId = (createdNft && 'objectId' in createdNft) ? createdNft.objectId : "";
 
       setRegistering(false);
       return {
@@ -160,7 +195,7 @@ export function useTruthMarket() {
           ) {
             // Get the NFT object details
             const objectResponse = await suiClient.getObject({
-              id: (change as any).objectId,
+              id: (change as SuiObjectChange).objectId,
               options: {
                 showContent: true,
                 showOwner: true,
@@ -168,19 +203,20 @@ export function useTruthMarket() {
             });
 
             if (objectResponse.data?.content) {
-              const content = objectResponse.data.content as any;
+              const content = objectResponse.data.content as SuiObjectContent;
               const nftHash = bytesToHex(content.fields.original_hash || []);
 
               // Check if this NFT's hash matches
               if (nftHash === hash) {
-                const owner = objectResponse.data.owner as any;
+                const owner = objectResponse.data.owner as SuiObjectOwner;
 
                 const dataset: DatasetNFT = {
-                  id: (change as any).objectId,
+                  id: (change as SuiObjectChange).objectId,
                   original_hash: hash,
                   metadata_hash: bytesToHex(content.fields.metadata_hash || []),
                   walrus_blob_id: content.fields.walrus_blob_id || "",
                   seal_policy_id: content.fields.seal_policy_id || "",
+                  seal_allowlist_id: content.fields.seal_allowlist_id || "",
                   name: content.fields.name || "",
                   dataset_url: content.fields.dataset_url || "",
                   format: content.fields.format || "",
@@ -255,7 +291,7 @@ export function useTruthMarket() {
           ) {
             // Get the NFT object details
             const objectResponse = await suiClient.getObject({
-              id: (change as any).objectId,
+              id: (change as SuiObjectChange).objectId,
               options: {
                 showContent: true,
                 showOwner: true,
@@ -263,15 +299,16 @@ export function useTruthMarket() {
             });
 
             if (objectResponse.data?.content) {
-              const content = objectResponse.data.content as any;
-              const owner = objectResponse.data.owner as any;
+              const content = objectResponse.data.content as SuiObjectContent;
+              const owner = objectResponse.data.owner as SuiObjectOwner;
 
               const nft: DatasetNFT = {
-                id: (change as any).objectId,
+                id: (change as SuiObjectChange).objectId,
                 original_hash: bytesToHex(content.fields.original_hash || []),
                 metadata_hash: bytesToHex(content.fields.metadata_hash || []),
                 walrus_blob_id: content.fields.walrus_blob_id || "",
                 seal_policy_id: content.fields.seal_policy_id || "",
+                seal_allowlist_id: content.fields.seal_allowlist_id || "",
                 name: content.fields.name || "",
                 dataset_url: content.fields.dataset_url || "",
                 format: content.fields.format || "",
@@ -284,7 +321,7 @@ export function useTruthMarket() {
               };
 
               entries.push({
-                id: (change as any).objectId,
+                id: (change as SuiObjectChange).objectId,
                 nft,
                 registrant: owner?.AddressOwner || "",
                 tx_digest: txBlock.digest,
@@ -324,7 +361,7 @@ export function useTruthMarket() {
 
       for (const obj of objects.data) {
         if (obj.data?.content) {
-          const content = obj.data.content as any;
+          const content = obj.data.content as SuiObjectContent;
 
           const nft: DatasetNFT = {
             id: obj.data.objectId,
@@ -332,6 +369,7 @@ export function useTruthMarket() {
             metadata_hash: bytesToHex(content.fields.metadata_hash || []),
             walrus_blob_id: content.fields.walrus_blob_id || "",
             seal_policy_id: content.fields.seal_policy_id || "",
+            seal_allowlist_id: content.fields.seal_allowlist_id || "",
             name: content.fields.name || "",
             dataset_url: content.fields.dataset_url || "",
             format: content.fields.format || "",
@@ -376,8 +414,8 @@ export function useTruthMarket() {
       });
 
       if (object.data?.content) {
-        const content = object.data.content as any;
-        const owner = object.data.owner as any;
+        const content = object.data.content as SuiObjectContent;
+        const owner = object.data.owner as SuiObjectOwner;
 
         return {
           id: nftId,
@@ -385,6 +423,7 @@ export function useTruthMarket() {
           metadata_hash: bytesToHex(content.fields.metadata_hash || []),
           walrus_blob_id: content.fields.walrus_blob_id || "",
           seal_policy_id: content.fields.seal_policy_id || "",
+          seal_allowlist_id: content.fields.seal_allowlist_id || "",
           name: content.fields.name || "",
           dataset_url: content.fields.dataset_url || "",
           format: content.fields.format || "",

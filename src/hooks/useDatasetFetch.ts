@@ -116,8 +116,9 @@ export function useDatasetFetch(): UseDatasetFetchReturn {
         setProgress({ loaded, total, percentage });
       }
 
-      // Combine chunks into single blob
-      const blob = new Blob(chunks, { type: contentType });
+      // Combine chunks into single blob (ensure proper typing)
+      const typedChunks = chunks.map(chunk => new Uint8Array(chunk));
+      const blob = new Blob(typedChunks, { type: contentType });
 
       // Convert blob to File
       const file = new File([blob], filename, {

@@ -4,7 +4,7 @@ import { useEffect, useRef } from 'react';
 import Lottie, { LottieRefCurrentProps } from 'lottie-react';
 
 interface LottieAnimationProps {
-  animationData: any;
+  animationData: Record<string, unknown>;
   loop?: boolean;
   autoplay?: boolean;
   className?: string;

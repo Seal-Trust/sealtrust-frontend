@@ -4,7 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { Header } from '@/components/layout/Header';
 import { DatasetReceipt } from '@/components/dataset-receipt';
-import { ArrowLeft, Database, Lightning, Shield, Clock, Upload } from '@phosphor-icons/react';
+import { ArrowLeft, Database, Lightning, Shield, Clock, Upload, Lock, Plus, X, ListPlus } from '@phosphor-icons/react';
 import { useCurrentAccount, useSignAndExecuteTransaction, useSuiClient } from '@mysten/dapp-kit';
 import { SuiWalletButton } from '@/components/wallet/SuiWalletButton';
 import { toast } from 'sonner';
@@ -16,7 +16,7 @@ import { allowlistService } from '@/lib/allowlist-service';
 import { CONFIG, ERROR_MESSAGES } from '@/lib/constants';
 import { stringToVecU8, hexToVecU8, MetadataVerificationRequest } from '@/lib/types';
 import { useDatasetFetch } from '@/hooks/useDatasetFetch';
-import { validateDatasetURL, detectFormatFromURL, extractFilenameFromURL, getValidationErrorMessage } from '@/lib/url-validation';
+import { validateDatasetURL, detectFormatFromURL, getValidationErrorMessage } from '@/lib/url-validation';
 
 interface ReceiptData {
   datasetUrl: string;
@@ -36,15 +36,23 @@ export default function RegisterPage() {
   const currentAccount = useCurrentAccount();
   const suiClient = useSuiClient();
   const { mutateAsync: signAndExecuteTransaction } = useSignAndExecuteTransaction();
-  const { fetchDataset, loading: urlFetchLoading, progress: urlProgress, cancel: cancelUrlFetch } = useDatasetFetch();
+  const { fetchDataset, progress: urlProgress } = useDatasetFetch();
 
   const [datasetUrl, setDatasetUrl] = useState('');
   const [description, setDescription] = useState('');
   const [format, setFormat] = useState('CSV');
   const [file, setFile] = useState<File | null>(null);
   const [step, setStep] = useState<'input' | 'fetching' | 'hashing' | 'encrypting' | 'uploading' | 'verifying' | 'registering' | 'complete'>('input');
-  const [progress, setProgress] = useState('');
   const [receiptData, setReceiptData] = useState<ReceiptData | null>(null);
+  const [progress, setProgress] = useState('');
+
+  // Initial access list - users to add to allowlist during registration
+  const [initialMembers, setInitialMembers] = useState<string[]>([]);
+  const [newMemberInput, setNewMemberInput] = useState('');
+
+  // Batch add state
+  const [batchMode, setBatchMode] = useState(false);
+  const [batchInput, setBatchInput] = useState('');
 
   // Error recovery cache - preserve intermediate results
   const [cachedResults, setCachedResults] = useState<{
@@ -54,7 +62,10 @@ export default function RegisterPage() {
     encryptedData?: Uint8Array;
     policyId?: string;
     blobId?: string;
-    attestation?: any;
+    attestation?: {
+      signature: string;
+      [key: string]: unknown;
+    };
   }>({});
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -73,6 +84,121 @@ export default function RegisterPage() {
         setFormat(ext);
       }
     }
+  };
+
+  // Helper functions for managing initial access list
+  const handleAddMember = () => {
+    const address = newMemberInput.trim();
+
+    // Validate address format
+    if (!address.startsWith('0x') || address.length !== 66) {
+      toast.error('Invalid Sui address format (must be 0x... with 64 hex characters)');
+      return;
+    }
+
+    // Check for duplicates
+    if (initialMembers.includes(address)) {
+      toast.error('This address is already in the list');
+      return;
+    }
+
+    // Don't allow adding self (already added automatically)
+    if (currentAccount && address === currentAccount.address) {
+      toast.error('You will be added automatically as the dataset owner');
+      return;
+    }
+
+    setInitialMembers([...initialMembers, address]);
+    setNewMemberInput('');
+    toast.success('Member added to initial access list');
+  };
+
+  const handleRemoveMember = (address: string) => {
+    setInitialMembers(initialMembers.filter(a => a !== address));
+    toast.success('Member removed from list');
+  };
+
+  // Parse batch input into addresses
+  const parseBatchInput = (input: string): string[] => {
+    return input
+      .split(/[\n,\s]+/)
+      .map(addr => addr.trim())
+      .filter(addr => addr.length > 0);
+  };
+
+  // Validate batch addresses
+  const validateBatchAddresses = (addresses: string[]): { valid: string[], invalid: string[], duplicates: string[], existing: string[] } => {
+    const valid: string[] = [];
+    const invalid: string[] = [];
+    const duplicates: string[] = [];
+    const existing: string[] = [];
+    const seen = new Set<string>();
+
+    for (const address of addresses) {
+      // Check format
+      if (!address.startsWith('0x') || address.length !== 66) {
+        invalid.push(address);
+        continue;
+      }
+
+      // Check duplicates in input
+      if (seen.has(address)) {
+        duplicates.push(address);
+        continue;
+      }
+
+      // Check if already in list
+      if (initialMembers.includes(address)) {
+        existing.push(address);
+        continue;
+      }
+
+      // Don't allow adding self
+      if (currentAccount && address === currentAccount.address) {
+        existing.push(address);
+        continue;
+      }
+
+      seen.add(address);
+      valid.push(address);
+    }
+
+    return { valid, invalid, duplicates, existing };
+  };
+
+  // Handle batch add for initial members
+  const handleBatchAdd = () => {
+    if (!batchInput.trim()) {
+      toast.error('Please enter at least one address');
+      return;
+    }
+
+    const addresses = parseBatchInput(batchInput);
+    const { valid, invalid, duplicates, existing } = validateBatchAddresses(addresses);
+
+    // Show validation results
+    if (invalid.length > 0) {
+      toast.error(`${invalid.length} invalid address(es) found. Please check the format.`);
+      return;
+    }
+
+    if (valid.length === 0) {
+      toast.error('No valid addresses to add');
+      return;
+    }
+
+    // Add all valid addresses
+    setInitialMembers([...initialMembers, ...valid]);
+    setBatchInput('');
+    setBatchMode(false);
+
+    // Show summary
+    const messages: string[] = [];
+    if (valid.length > 0) messages.push(`${valid.length} added`);
+    if (duplicates.length > 0) messages.push(`${duplicates.length} duplicate(s) skipped`);
+    if (existing.length > 0) messages.push(`${existing.length} already in list`);
+
+    toast.success(messages.join(', '));
   };
 
   // V3 Architecture: Complete registration flow
@@ -142,7 +268,8 @@ export default function RegisterPage() {
       const { allowlistId, capId } = await allowlistService.createAllowlist(
         `Access for ${datasetFile.name}`,
         CONFIG.SEAL_ALLOWLIST_PACKAGE_ID,
-        signAndExecuteTransaction
+        signAndExecuteTransaction,
+        suiClient
       );
 
       console.log('✅ Allowlist created:', allowlistId);
@@ -161,6 +288,21 @@ export default function RegisterPage() {
         signAndExecuteTransaction
       );
       console.log('✅ Uploader added to allowlist');
+
+      // Add initial members if any were configured
+      if (initialMembers.length > 0) {
+        setProgress(`Adding ${initialMembers.length} initial member(s) to allowlist...`);
+        for (const memberAddress of initialMembers) {
+          await allowlistService.addUser(
+            allowlistId,
+            capId,
+            memberAddress,
+            CONFIG.SEAL_ALLOWLIST_PACKAGE_ID,
+            signAndExecuteTransaction
+          );
+          console.log('✅ Added member to allowlist:', memberAddress);
+        }
+      }
 
       // Step 3 & 4: Hash and Encrypt with Seal (using allowlist namespace)
       // NOTE: encryptDataset now returns originalHash to avoid double hashing!
@@ -182,8 +324,10 @@ export default function RegisterPage() {
       // Step 3: Upload encrypted blob to Walrus
       setStep('uploading');
       setProgress('Uploading encrypted blob to Walrus...');
+      // Ensure encryptedData is properly typed as Uint8Array
+      const encryptedBlob = new Uint8Array(encryptedData);
       const { blobId } = await walrusService.uploadToWalrus(
-        new File([encryptedData], `${datasetFile.name}.encrypted`, { type: 'application/octet-stream' }),
+        new File([encryptedBlob], `${datasetFile.name}.encrypted`, { type: 'application/octet-stream' }),
         CONFIG.WALRUS_EPOCHS
       );
 
@@ -632,11 +776,129 @@ export default function RegisterPage() {
                       </select>
                     </div>
 
+                    {/* Initial Access Configuration */}
+                    <div className="border border-border rounded-xl p-4 bg-gradient-to-br from-purple-50/50 to-blue-50/50">
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center gap-2">
+                          <Lock className="w-5 h-5 text-purple-600" />
+                          <h3 className="text-sm font-semibold text-foreground">
+                            Initial Access Control (Optional)
+                          </h3>
+                        </div>
+
+                        {/* Mode Toggle */}
+                        <div className="flex gap-1">
+                          <button
+                            onClick={() => setBatchMode(false)}
+                            disabled={isLoading}
+                            className={`flex items-center gap-1 px-2 py-1 rounded text-xs font-medium transition-all ${
+                              !batchMode
+                                ? 'bg-purple-600 text-white'
+                                : 'bg-white text-gray-600 hover:bg-gray-50'
+                            }`}
+                          >
+                            <Plus className="w-3 h-3" />
+                            Single
+                          </button>
+                          <button
+                            onClick={() => setBatchMode(true)}
+                            disabled={isLoading}
+                            className={`flex items-center gap-1 px-2 py-1 rounded text-xs font-medium transition-all ${
+                              batchMode
+                                ? 'bg-purple-600 text-white'
+                                : 'bg-white text-gray-600 hover:bg-gray-50'
+                            }`}
+                          >
+                            <ListPlus className="w-3 h-3" />
+                            Batch
+                          </button>
+                        </div>
+                      </div>
+
+                      <p className="text-xs text-muted-foreground mb-3">
+                        {batchMode
+                          ? 'Paste multiple addresses separated by comma, newline, or space'
+                          : 'Add wallet addresses that should have access to download this dataset. You\'ll be added automatically as the owner.'}
+                      </p>
+
+                      {/* Single Mode Input */}
+                      {!batchMode && (
+                        <div className="flex gap-2 mb-3">
+                          <input
+                            type="text"
+                            value={newMemberInput}
+                            onChange={(e) => setNewMemberInput(e.target.value)}
+                            onKeyPress={(e) => e.key === 'Enter' && handleAddMember()}
+                            placeholder="0x... (Sui wallet address)"
+                            disabled={isLoading}
+                            className="flex-1 px-3 py-2 rounded-lg bg-white border border-border focus:outline-none focus:border-purple-500 transition-colors disabled:opacity-50 text-xs font-mono"
+                          />
+                          <button
+                            onClick={handleAddMember}
+                            disabled={isLoading || !newMemberInput.trim()}
+                            className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-xs font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
+                          >
+                            <Plus className="w-4 h-4" />
+                            Add
+                          </button>
+                        </div>
+                      )}
+
+                      {/* Batch Mode Input */}
+                      {batchMode && (
+                        <div className="space-y-2 mb-3">
+                          <textarea
+                            value={batchInput}
+                            onChange={(e) => setBatchInput(e.target.value)}
+                            placeholder="Paste multiple addresses (separated by comma, newline, or space)&#10;Example:&#10;0x1234...&#10;0x5678...&#10;0x9abc..."
+                            rows={5}
+                            disabled={isLoading}
+                            className="w-full px-3 py-2 rounded-lg bg-white border border-border focus:outline-none focus:border-purple-500 transition-colors disabled:opacity-50 text-xs font-mono resize-none"
+                          />
+                          <button
+                            onClick={handleBatchAdd}
+                            disabled={isLoading || !batchInput.trim()}
+                            className="w-full px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-xs font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1"
+                          >
+                            <ListPlus className="w-4 h-4" />
+                            Add All
+                          </button>
+                        </div>
+                      )}
+
+                      {/* Members List */}
+                      {initialMembers.length > 0 && (
+                        <div className="space-y-2">
+                          <p className="text-xs font-medium text-muted-foreground">
+                            {initialMembers.length} {initialMembers.length === 1 ? 'member' : 'members'} will be added:
+                          </p>
+                          {initialMembers.map((address) => (
+                            <div
+                              key={address}
+                              className="flex items-center justify-between p-2 bg-white rounded-lg border border-border"
+                            >
+                              <p className="text-xs font-mono text-foreground truncate flex-1 mr-2">
+                                {address}
+                              </p>
+                              <button
+                                onClick={() => handleRemoveMember(address)}
+                                disabled={isLoading}
+                                className="p-1 text-red-500 hover:bg-red-50 rounded transition-colors disabled:opacity-50"
+                                title="Remove"
+                              >
+                                <X className="w-4 h-4" />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
                     {/* Status Messages */}
                     {step === 'fetching' && (
                       <div className="bg-purple-50 border border-purple-200 rounded-xl p-4">
                         <p className="text-sm text-purple-900 font-medium mb-2">
-                          Fetching dataset from URL...
+                          {progress || 'Fetching dataset from URL...'}
                         </p>
                         {urlProgress && (
                           <div className="space-y-1">
@@ -666,7 +928,7 @@ export default function RegisterPage() {
                     {step === 'encrypting' && (
                       <div className="bg-purple-50 border border-purple-200 rounded-xl p-4">
                         <p className="text-sm text-purple-900">
-                          Encrypting dataset with Seal...
+                          {progress || 'Encrypting dataset with Seal...'}
                         </p>
                       </div>
                     )}
@@ -674,7 +936,7 @@ export default function RegisterPage() {
                     {step === 'uploading' && (
                       <div className="bg-green-50 border border-green-200 rounded-xl p-4">
                         <p className="text-sm text-green-900">
-                          Uploading encrypted blob to Walrus...
+                          {progress || 'Uploading encrypted blob to Walrus...'}
                         </p>
                       </div>
                     )}
@@ -682,7 +944,7 @@ export default function RegisterPage() {
                     {step === 'verifying' && (
                       <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
                         <p className="text-sm text-blue-900">
-                          Verifying with Nautilus TEE...
+                          {progress || 'Verifying with Nautilus TEE...'}
                         </p>
                       </div>
                     )}

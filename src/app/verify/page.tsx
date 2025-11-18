@@ -17,6 +17,7 @@ import { useCurrentAccount } from '@mysten/dapp-kit';
 import { useTruthMarket } from '@/hooks/useTruthMarket';
 import { computeFileHash, computeUrlHash, formatHash } from '@/lib/utils/crypto';
 import { toast } from 'sonner';
+import { DatasetNFT } from '@/lib/types';
 
 export default function VerifyPage() {
   const account = useCurrentAccount();
@@ -30,7 +31,7 @@ export default function VerifyPage() {
   const { verifyDataset, verifying } = useTruthMarket();
   const [verificationResult, setVerificationResult] = useState<{
     found: boolean;
-    dataset: any;
+    dataset: DatasetNFT | null;
     registrant?: string;
     tx_digest?: string;
   } | null>(null);

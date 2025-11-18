@@ -1,6 +1,12 @@
 import { Transaction } from '@mysten/sui/transactions';
 import { SuiClient } from '@mysten/sui/client';
-import { fromHex, toHex } from '@mysten/sui/utils';
+import { toHex } from '@mysten/sui/utils';
+import type { SuiObjectChange } from '@mysten/sui/client';
+
+interface AllowlistFields {
+  list?: string[];
+  [key: string]: unknown;
+}
 
 /**
  * Allowlist Service for Managing Access Control
@@ -20,6 +26,12 @@ export interface AddUserResult {
   success: boolean;
 }
 
+// Type for the signAndExecuteTransaction function from dapp-kit
+type SignAndExecuteFn = (args: {
+  transaction: Transaction;
+  chain?: `${string}:${string}`;
+}) => Promise<{ digest: string }>;
+
 export class AllowlistService {
   /**
    * Create a new allowlist for a dataset
@@ -28,17 +40,21 @@ export class AllowlistService {
    * @param name - Name for the allowlist (e.g., "Access for my-dataset.csv")
    * @param packageId - Seal allowlist package ID
    * @param signAndExecuteTransaction - Function from useSuiClient to execute tx
+   * @param suiClient - Sui client instance to fetch transaction details
    * @returns Allowlist ID and Cap ID
    */
   async createAllowlist(
     name: string,
     packageId: string,
-    signAndExecuteTransaction: (args: {
-      transaction: Transaction;
-      chain: string;
-    }) => Promise<any>
+    signAndExecuteTransaction: SignAndExecuteFn,
+    suiClient: SuiClient
   ): Promise<AllowlistResult> {
     console.log('Creating allowlist:', name);
+
+    // Validate suiClient
+    if (!suiClient) {
+      throw new Error('SuiClient is not available. Make sure the component is wrapped with SuiClientProvider.');
+    }
 
     const tx = new Transaction();
 
@@ -53,33 +69,48 @@ export class AllowlistService {
     // Execute transaction
     const result = await signAndExecuteTransaction({
       transaction: tx,
-      chain: 'sui:testnet',
+      chain: 'sui:testnet' as `${string}:${string}`,
     });
 
-    console.log('Allowlist creation result:', result);
+    console.log('Transaction digest:', result.digest);
+
+    // Fetch transaction details to get object changes
+    const txResponse = await suiClient.getTransactionBlock({
+      digest: result.digest,
+      options: { showObjectChanges: true },
+    });
+
+    console.log('Allowlist creation result:', txResponse);
 
     // Extract object IDs from transaction effects
-    const { objectChanges } = result.effects || result;
+    const objectChanges = txResponse.objectChanges;
     if (!objectChanges) {
-      throw new Error('No object changes in transaction result');
+      console.error('Full transaction result:', JSON.stringify(txResponse, null, 2));
+      throw new Error('No object changes in transaction result.');
     }
 
     // Find the created Allowlist (shared object)
     const allowlistChange = objectChanges.find(
-      (change: any) =>
+      (change) =>
         change.type === 'created' &&
+        'objectType' in change &&
         change.objectType?.includes('::allowlist::Allowlist')
     );
 
     // Find the created Cap (owned object)
     const capChange = objectChanges.find(
-      (change: any) =>
+      (change) =>
         change.type === 'created' &&
+        'objectType' in change &&
         change.objectType?.includes('::allowlist::Cap')
     );
 
     if (!allowlistChange || !capChange) {
       throw new Error('Failed to extract allowlist or cap from transaction');
+    }
+
+    if (!('objectId' in allowlistChange) || !('objectId' in capChange)) {
+      throw new Error('Invalid object changes - missing objectId');
     }
 
     const allowlistId = allowlistChange.objectId;
@@ -109,10 +140,7 @@ export class AllowlistService {
     capId: string,
     userAddress: string,
     packageId: string,
-    signAndExecuteTransaction: (args: {
-      transaction: Transaction;
-      chain: string;
-    }) => Promise<any>
+    signAndExecuteTransaction: SignAndExecuteFn
   ): Promise<AddUserResult> {
     console.log(`Adding ${userAddress} to allowlist ${allowlistId}`);
 
@@ -129,7 +157,7 @@ export class AllowlistService {
 
     const result = await signAndExecuteTransaction({
       transaction: tx,
-      chain: 'sui:testnet',
+      chain: 'sui:testnet' as `${string}:${string}`,
     });
 
     console.log('✅ User added to allowlist');
@@ -154,10 +182,7 @@ export class AllowlistService {
     capId: string,
     userAddress: string,
     packageId: string,
-    signAndExecuteTransaction: (args: {
-      transaction: Transaction;
-      chain: string;
-    }) => Promise<any>
+    signAndExecuteTransaction: SignAndExecuteFn
   ): Promise<AddUserResult> {
     console.log(`Removing ${userAddress} from allowlist ${allowlistId}`);
 
@@ -174,7 +199,7 @@ export class AllowlistService {
 
     const result = await signAndExecuteTransaction({
       transaction: tx,
-      chain: 'sui:testnet',
+      chain: 'sui:testnet' as `${string}:${string}`,
     });
 
     console.log('✅ User removed from allowlist');
@@ -248,7 +273,7 @@ export class AllowlistService {
       }
 
       // Extract the list field
-      const fields = allowlistObj.data.content.fields as any;
+      const fields = allowlistObj.data.content.fields as AllowlistFields;
       const list = fields.list || [];
 
       // Check if user address is in the list
@@ -280,7 +305,7 @@ export class AllowlistService {
         return [];
       }
 
-      const fields = allowlistObj.data.content.fields as any;
+      const fields = allowlistObj.data.content.fields as AllowlistFields;
       return fields.list || [];
     } catch (error) {
       console.error('Error fetching allowlist members:', error);

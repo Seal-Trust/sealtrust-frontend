@@ -16,7 +16,7 @@
     "@fontsource-variable/jetbrains-mono": "^5.2.6",
     "@mysten/dapp-kit": "^0.14.37",
     "@mysten/seal": "^0.9.4",
-    "@mysten/sui": "^1.18.0",
+    "@mysten/sui": "1.24.0",
     "@mysten/walrus": "^0.8.4",
     "@phosphor-icons/react": "^2.1.10",
     "@tanstack/react-query": "^5.85.5",

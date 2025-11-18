@@ -128,7 +128,7 @@ export interface TxResult {
 export interface NautilusError {
   error: string;
   code?: string;
-  details?: any;
+  details?: unknown;
 }
 
 // V3 Architecture: Metadata verification request (NEW!)

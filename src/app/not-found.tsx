@@ -40,8 +40,8 @@ export default function NotFound() {
           </h2>
 
           <p className="text-lg text-muted-foreground max-w-md mx-auto">
-            The page you're looking for doesn't exist or has been moved.
-            Let's get you back on track.
+            The page you&apos;re looking for doesn&apos;t exist or has been moved.
+            Let&apos;s get you back on track.
           </p>
         </div>
 

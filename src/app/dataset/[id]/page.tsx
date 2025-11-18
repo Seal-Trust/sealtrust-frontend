@@ -98,7 +98,13 @@ export default function DatasetDetailPage() {
       let found = false;
       for (const obj of ownedObjects.data) {
         if (obj.data && 'content' in obj.data && obj.data.content) {
-          const content = obj.data.content as any;
+          const content = obj.data.content as {
+            dataType: string;
+            fields?: {
+              allowlist_id?: string;
+              [key: string]: unknown;
+            };
+          };
           if (content.dataType === 'moveObject' && content.fields) {
             // Check if this Cap's allowlist_id matches the dataset's seal_allowlist_id
             if (content.fields.allowlist_id === dataset.seal_allowlist_id) {
