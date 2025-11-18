@@ -20,12 +20,12 @@ export const metadata: Metadata = {
     description: "Cryptographic verification and timestamping for AI training datasets",
   },
   icons: {
-    icon: "/truthmarket.png",
-    shortcut: "/truthmarket.png",
-    apple: "/truthmarket.png",
+    icon: "/truthmarket.svg",
+    shortcut: "/truthmarket.svg",
+    apple: "/truthmarket.svg",
     other: {
       rel: "apple-touch-icon-precomposed",
-      url: "/truthmarket.png",
+      url: "/truthmarket.svg",
     },
   },
 };

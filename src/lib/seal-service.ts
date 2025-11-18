@@ -22,8 +22,8 @@ export class SealService {
    * Initialize the SealClient with testnet key servers
    * Must be called before using encrypt/decrypt operations
    *
-   * NOTE: We create a fresh SuiClient instance instead of using the dapp-kit client
-   * because SealClient requires a client with experimental core extensions
+   * NOTE: Based on the Seal examples, we need to create a proper SuiClient
+   * with the network URL configuration
    */
   async initialize(): Promise<void> {
     if (this.client) {
@@ -31,22 +31,32 @@ export class SealService {
       return;
     }
 
-    // Create a fresh SuiClient instance compatible with Seal
-    // This is the same pattern used in Seal's integration tests
-    this.suiClient = new SuiClient({ url: getFullnodeUrl('testnet') });
+    // Create a SuiClient exactly as shown in the Seal examples
+    // This ensures getObject and other methods are available
+    this.suiClient = new SuiClient({
+      url: getFullnodeUrl('testnet')
+    });
 
     console.log('🔐 Initializing Seal with', TESTNET_KEY_SERVERS.length, 'key servers');
 
+    // Initialize SealClient following the pattern from Seal examples
     this.client = new SealClient({
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      suiClient: this.suiClient as any, // Type cast due to Seal's specific client requirements
+      suiClient: this.suiClient,
       serverConfigs: TESTNET_KEY_SERVERS.map(objectId => ({
         objectId,
         weight: 1, // Equal weight for all servers
       })),
-      verifyKeyServers: false, // Disable verification to avoid network issues
-      timeout: 10000, // 10 second timeout
+      verifyKeyServers: false, // Set to false for testnet to avoid connection issues
+      // Remove timeout as it's not in the examples
     });
+
+    // Test if SuiClient has getObject method (required by Seal internally)
+    if (typeof this.suiClient.getObject !== 'function') {
+      console.warn('⚠️ SuiClient.getObject method not found. This may cause issues with Seal.');
+      console.log('Available SuiClient methods:', Object.getOwnPropertyNames(Object.getPrototypeOf(this.suiClient)));
+    }
+
+    console.log('✅ Seal client initialized successfully');
   }
 
   private getClient(): SealClient {
@@ -116,20 +126,47 @@ export class SealService {
 
     // 4. Encrypt with Seal
     console.log('Encrypting dataset with Seal...');
-    const encrypted = await this.getClient().encrypt({
-      threshold: 2,
-      packageId,  // Keep as hex string
-      id: policyId,  // Keep as hex string
-      data: new Uint8Array(fileBuffer),
-    });
+    console.log('  Package ID:', packageId);
+    console.log('  Policy ID:', policyId);
+    console.log('  Data size:', fileBuffer.byteLength, 'bytes');
 
-    console.log('Encryption complete. Encrypted size:', encrypted.encryptedObject.length);
+    // Validate client is initialized
+    const client = this.getClient();
+    if (!client) {
+      throw new Error('Seal client not initialized');
+    }
 
-    return {
-      encryptedData: encrypted.encryptedObject,
-      policyId,
-      originalHash
-    };
+    // Validate suiClient has required methods
+    if (!this.suiClient) {
+      throw new Error('SuiClient not initialized');
+    }
+
+    // Log suiClient to check if it has getObject method
+    console.log('SuiClient methods:', Object.getOwnPropertyNames(Object.getPrototypeOf(this.suiClient)));
+
+    try {
+      const encrypted = await client.encrypt({
+        threshold: 2,
+        packageId,  // Keep as hex string
+        id: policyId,  // Keep as hex string
+        data: new Uint8Array(fileBuffer),
+      });
+
+      console.log('Encryption complete. Encrypted size:', encrypted.encryptedObject.length);
+
+      return {
+        encryptedData: encrypted.encryptedObject,
+        policyId,
+        originalHash
+      };
+    } catch (error) {
+      console.error('Seal encrypt failed:', error);
+      console.error('Error details:', {
+        message: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined,
+      });
+      throw error;
+    }
   }
 
   /**
@@ -155,8 +192,7 @@ export class SealService {
       const stored = await get(key);
       if (stored) {
         console.log('Found stored session key, checking validity...');
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const imported = await SessionKey.import(stored, suiClient as any);
+        const imported = await SessionKey.import(stored, suiClient); // No type cast needed
         if (!imported.isExpired()) {
           console.log('✅ Reusing existing session key (no wallet popup needed)');
           return imported;
@@ -173,8 +209,7 @@ export class SealService {
       address,
       packageId,
       ttlMin: 10,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      suiClient: suiClient as any, // Type cast due to Seal's specific client requirements
+      suiClient: suiClient, // Pass directly, no type cast needed
     });
 
     // Get user signature (wallet popup - only happens every 10 min)
