@@ -258,10 +258,10 @@ export default function RegisterPage() {
         datasetFile = file!;
       }
 
-      // Step 1: Initialize Seal with testnet key servers
-      // Note: Seal creates its own SuiClient instance internally
+      // Step 1: Initialize Seal with the suiClient from dapp-kit
+      // This ensures compatibility with the rest of the app
       setProgress('Initializing Seal encryption service...');
-      await sealService.initialize();
+      await sealService.initialize(suiClient);
 
       // Step 2: Create allowlist for access control
       setProgress('Creating Seal allowlist for access control...');

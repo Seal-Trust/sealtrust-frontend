@@ -15,55 +15,48 @@ const TESTNET_KEY_SERVERS = [
 ];
 
 export class SealService {
-  private client: SealClient | null = null;
   private suiClient: SuiClient | null = null;
 
   /**
-   * Initialize the SealClient with testnet key servers
+   * Initialize the service with a SuiClient
    * Must be called before using encrypt/decrypt operations
-   *
-   * NOTE: Based on the Seal examples, we need to create a proper SuiClient
-   * with the network URL configuration
    */
-  async initialize(): Promise<void> {
-    if (this.client) {
-      // Already initialized
-      return;
+  async initialize(suiClient?: SuiClient): Promise<void> {
+    // If a suiClient is provided, use it. Otherwise create a new one
+    if (suiClient) {
+      this.suiClient = suiClient;
+      console.log('🔐 Using provided SuiClient');
+    } else {
+      // Create a SuiClient exactly as shown in the Seal examples
+      this.suiClient = new SuiClient({
+        url: getFullnodeUrl('testnet')
+      });
+      console.log('🔐 Created new SuiClient for testnet');
     }
 
-    // Create a SuiClient exactly as shown in the Seal examples
-    // This ensures getObject and other methods are available
-    this.suiClient = new SuiClient({
-      url: getFullnodeUrl('testnet')
-    });
+    console.log('✅ Seal service initialized');
+  }
 
-    console.log('🔐 Initializing Seal with', TESTNET_KEY_SERVERS.length, 'key servers');
+  /**
+   * Create a fresh SealClient instance for each operation
+   * This matches the pattern from the Seal examples where the client
+   * is created in the component, not stored
+   */
+  private createSealClient(): SealClient {
+    if (!this.suiClient) {
+      throw new Error('SealService not initialized. Call initialize() first.');
+    }
 
-    // Initialize SealClient following the pattern from Seal examples
-    this.client = new SealClient({
+    // Create a fresh SealClient instance each time
+    // This ensures the suiClient reference is properly maintained
+    return new SealClient({
       suiClient: this.suiClient,
       serverConfigs: TESTNET_KEY_SERVERS.map(objectId => ({
         objectId,
         weight: 1, // Equal weight for all servers
       })),
       verifyKeyServers: false, // Set to false for testnet to avoid connection issues
-      // Remove timeout as it's not in the examples
     });
-
-    // Test if SuiClient has getObject method (required by Seal internally)
-    if (typeof this.suiClient.getObject !== 'function') {
-      console.warn('⚠️ SuiClient.getObject method not found. This may cause issues with Seal.');
-      console.log('Available SuiClient methods:', Object.getOwnPropertyNames(Object.getPrototypeOf(this.suiClient)));
-    }
-
-    console.log('✅ Seal client initialized successfully');
-  }
-
-  private getClient(): SealClient {
-    if (!this.client) {
-      throw new Error('SealService not initialized. Call initialize(suiClient) first.');
-    }
-    return this.client;
   }
 
   /**
@@ -130,19 +123,8 @@ export class SealService {
     console.log('  Policy ID:', policyId);
     console.log('  Data size:', fileBuffer.byteLength, 'bytes');
 
-    // Validate client is initialized
-    const client = this.getClient();
-    if (!client) {
-      throw new Error('Seal client not initialized');
-    }
-
-    // Validate suiClient has required methods
-    if (!this.suiClient) {
-      throw new Error('SuiClient not initialized');
-    }
-
-    // Log suiClient to check if it has getObject method
-    console.log('SuiClient methods:', Object.getOwnPropertyNames(Object.getPrototypeOf(this.suiClient)));
+    // Create a fresh SealClient for this operation
+    const client = this.createSealClient();
 
     try {
       const encrypted = await client.encrypt({
@@ -255,7 +237,11 @@ export class SealService {
     txBytes: Uint8Array
   ): Promise<Uint8Array> {
     console.log('Decrypting dataset with Seal...');
-    const decrypted = await this.getClient().decrypt({
+
+    // Create a fresh SealClient for this operation
+    const client = this.createSealClient();
+
+    const decrypted = await client.decrypt({
       data: encryptedData,
       sessionKey,
       txBytes
