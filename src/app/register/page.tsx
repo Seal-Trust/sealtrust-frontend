@@ -381,19 +381,18 @@ export default function RegisterPage() {
       if (initialMembers.length > 0) {
         setProgress(`Adding ${initialMembers.length} initial member(s) to allowlist...`);
 
-        // Use Promise.all for parallel operations (performance improvement)
-        await Promise.all(
-          initialMembers.map(async (memberAddress) => {
-            await allowlistService.addUser(
-              allowlistId,
-              capId,
-              memberAddress,
-              CONFIG.SEAL_ALLOWLIST_PACKAGE_ID,
-              signAndExecuteTransaction
-            );
-            console.log('✅ Added member to allowlist:', memberAddress);
-          })
-        );
+        // IMPORTANT: Must be sequential (not parallel) because each transaction modifies the same capId object
+        // Using Promise.all would cause Sui object version conflicts
+        for (const memberAddress of initialMembers) {
+          await allowlistService.addUser(
+            allowlistId,
+            capId,
+            memberAddress,
+            CONFIG.SEAL_ALLOWLIST_PACKAGE_ID,
+            signAndExecuteTransaction
+          );
+          console.log('✅ Added member to allowlist:', memberAddress);
+        }
       }
 
       // Step 2 & 3: Hash and Encrypt with Seal (using allowlist namespace)
