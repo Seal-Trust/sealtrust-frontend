@@ -22,7 +22,7 @@ export class SealService {
         objectId,
         weight: 1, // Equal weight for all servers
       })),
-      verifyKeyServers: CONFIG.SEAL_KEY_SERVER_VERIFICATION,
+      verifyKeyServers: true,
     });
   }
 
