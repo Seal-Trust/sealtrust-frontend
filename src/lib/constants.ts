@@ -10,8 +10,8 @@ export const CONFIG = {
   VERIFICATION_PACKAGE: process.env.NEXT_PUBLIC_VERIFICATION_PACKAGE || "0xcdc25c90e328f2905c97c01e90424395dd7b10e67769fc8f4ae62b87f1e63e4e",
 
   // Enclave Object ID - Use this for register_dataset (PRODUCTION)
-  // Note: Need to create new Enclave from EnclaveConfig for production use
-  ENCLAVE_ID: process.env.NEXT_PUBLIC_ENCLAVE_ID || "0x55d6a15a5e8822b39f76dc53031d83beddc1e5b0e3ef804b82e8d4bfe4fbdc32",
+  // Registered from AWS Nitro attestation on 2025-11-22
+  ENCLAVE_ID: process.env.NEXT_PUBLIC_ENCLAVE_ID || "0x611b83f2b4d97471a6c164877ff23a2f0570806baf3d9380d1f11433a2b685ec",
 
   // EnclaveConfig Object ID - SealTrust (deployed 2025-11-22)
   ENCLAVE_CONFIG_ID: process.env.NEXT_PUBLIC_ENCLAVE_CONFIG_ID || "0x55d6a15a5e8822b39f76dc53031d83beddc1e5b0e3ef804b82e8d4bfe4fbdc32",
