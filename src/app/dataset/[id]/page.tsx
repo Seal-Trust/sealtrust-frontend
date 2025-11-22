@@ -20,7 +20,7 @@ import {
   Warning
 } from '@phosphor-icons/react';
 import { formatAddress, formatHash } from '@/lib/utils';
-import { useTruthMarket } from '@/hooks/useTruthMarket';
+import { useSealTrust } from '@/hooks/useSealTrust';
 import { DatasetNFT } from '@/lib/types';
 import { walrusService } from '@/lib/walrus-service';
 import { DatasetDownload } from '@/components/dataset/DatasetDownload';
@@ -32,7 +32,7 @@ import { CONFIG } from '@/lib/constants';
 export default function DatasetDetailPage() {
   const params = useParams();
   const nftId = params.id as string;
-  const { getDatasetDetails } = useTruthMarket();
+  const { getDatasetDetails } = useSealTrust();
   const currentAccount = useCurrentAccount();
   const suiClient = useSuiClient();
 

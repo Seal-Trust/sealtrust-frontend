@@ -6,14 +6,15 @@ export const CONFIG = {
   // Sui Network
   SUI_NETWORK: (process.env.NEXT_PUBLIC_SUI_NETWORK || "testnet") as "mainnet" | "testnet" | "devnet",
 
-  // Move Package IDs - PRODUCTION (deployed 2025-11-22)
-  VERIFICATION_PACKAGE: process.env.NEXT_PUBLIC_VERIFICATION_PACKAGE || "0xe9cc4d6d70a38c9e32c296007deb67d1503a2d77963f2b9e0782cc396a68834a",
+  // Move Package IDs - SealTrust (deployed 2025-11-22)
+  VERIFICATION_PACKAGE: process.env.NEXT_PUBLIC_VERIFICATION_PACKAGE || "0xcdc25c90e328f2905c97c01e90424395dd7b10e67769fc8f4ae62b87f1e63e4e",
 
   // Enclave Object ID - Use this for register_dataset (PRODUCTION)
-  ENCLAVE_ID: process.env.NEXT_PUBLIC_ENCLAVE_ID || "0x2f48b9d38d71982ad858f679ce8c1f3975b1dfc76900a673f0046eb9d2021f3f",
+  // Note: Need to create new Enclave from EnclaveConfig for production use
+  ENCLAVE_ID: process.env.NEXT_PUBLIC_ENCLAVE_ID || "0x55d6a15a5e8822b39f76dc53031d83beddc1e5b0e3ef804b82e8d4bfe4fbdc32",
 
-  // EnclaveConfig Object ID - Use for register_dataset_dev (DEV ONLY) or admin operations
-  ENCLAVE_CONFIG_ID: process.env.NEXT_PUBLIC_ENCLAVE_CONFIG_ID || "0x97991f6c063f189b50b395ad21545fd17377f95e08586fa99a23b6fc131a4c07",
+  // EnclaveConfig Object ID - SealTrust (deployed 2025-11-22)
+  ENCLAVE_CONFIG_ID: process.env.NEXT_PUBLIC_ENCLAVE_CONFIG_ID || "0x55d6a15a5e8822b39f76dc53031d83beddc1e5b0e3ef804b82e8d4bfe4fbdc32",
 
   // Enclave Package ID (official Nautilus)
   ENCLAVE_PACKAGE_ID: "0x0ff344b5b6f07b79b56a4ce1e9b1ef5a96ba219f6e6f2c49f194dee29dfc8b7f",

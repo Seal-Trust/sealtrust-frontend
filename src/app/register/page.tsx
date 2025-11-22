@@ -525,8 +525,8 @@ export default function RegisterPage() {
       // CRITICAL: Capture the NFT returned by the Move function
       // PRODUCTION: Use register_dataset with full TEE signature verification
       const [nft] = tx.moveCall({
-        target: `${CONFIG.VERIFICATION_PACKAGE}::truthmarket::register_dataset`,
-        typeArguments: [`${CONFIG.VERIFICATION_PACKAGE}::truthmarket::TRUTHMARKET`],
+        target: `${CONFIG.VERIFICATION_PACKAGE}::sealtrust::register_dataset`,
+        typeArguments: [`${CONFIG.VERIFICATION_PACKAGE}::sealtrust::SEALTRUST`],
         arguments: [
           tx.pure.vector('u8', metadata.dataset_id),      // dataset_id
           tx.pure.vector('u8', metadata.name),            // name

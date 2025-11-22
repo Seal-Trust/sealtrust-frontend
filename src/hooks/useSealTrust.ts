@@ -51,7 +51,7 @@ interface SuiObjectOwner {
 /**
  * Main hook for SealTrust blockchain operations
  */
-export function useTruthMarket() {
+export function useSealTrust() {
   const account = useCurrentAccount();
   const suiClient = useSuiClient();
   const { mutateAsync: signAndExecute } = useSignAndExecuteTransaction();
@@ -126,8 +126,8 @@ export function useTruthMarket() {
 
       // Call production register_dataset function (verifies signature on-chain)
       const [nft] = tx.moveCall({
-        target: `${CONFIG.VERIFICATION_PACKAGE}::truthmarket::register_dataset`,
-        typeArguments: [`${CONFIG.VERIFICATION_PACKAGE}::truthmarket::TRUTHMARKET`],
+        target: `${CONFIG.VERIFICATION_PACKAGE}::sealtrust::register_dataset`,
+        typeArguments: [`${CONFIG.VERIFICATION_PACKAGE}::sealtrust::SEALTRUST`],
         arguments: args,
       });
 
@@ -216,8 +216,8 @@ export function useTruthMarket() {
 
       // Call register_dataset_dev function (DEV ONLY - skips signature verification)
       const [nft] = tx.moveCall({
-        target: `${CONFIG.VERIFICATION_PACKAGE}::truthmarket::register_dataset_dev`,
-        typeArguments: [`${CONFIG.VERIFICATION_PACKAGE}::truthmarket::TRUTHMARKET`],
+        target: `${CONFIG.VERIFICATION_PACKAGE}::sealtrust::register_dataset_dev`,
+        typeArguments: [`${CONFIG.VERIFICATION_PACKAGE}::sealtrust::SEALTRUST`],
         arguments: [
           tx.pure.vector("u8", hexToBytes(hash)), // dataset_hash
           tx.pure.vector("u8", stringToBytes(datasetUrl)), // dataset_url
@@ -304,7 +304,7 @@ export function useTruthMarket() {
         filter: {
           MoveFunction: {
             package: CONFIG.VERIFICATION_PACKAGE,
-            module: "truthmarket",
+            module: "sealtrust",
             function: "register_dataset",
           },
         },
@@ -398,7 +398,7 @@ export function useTruthMarket() {
         filter: {
           MoveFunction: {
             package: CONFIG.VERIFICATION_PACKAGE,
-            module: "truthmarket",
+            module: "sealtrust",
             function: "register_dataset",
           },
         },
@@ -481,7 +481,7 @@ export function useTruthMarket() {
       const objects = await suiClient.getOwnedObjects({
         owner: address,
         filter: {
-          StructType: `${CONFIG.VERIFICATION_PACKAGE}::truthmarket::DatasetNFT`,
+          StructType: `${CONFIG.VERIFICATION_PACKAGE}::sealtrust::DatasetNFT`,
         },
         options: {
           showContent: true,

@@ -14,7 +14,7 @@ import {
   Hash,
 } from '@phosphor-icons/react';
 import { useCurrentAccount } from '@mysten/dapp-kit';
-import { useTruthMarket } from '@/hooks/useTruthMarket';
+import { useSealTrust } from '@/hooks/useSealTrust';
 import { computeFileHash, computeUrlHash, formatHash } from '@/lib/utils/crypto';
 import { toast } from 'sonner';
 import { DatasetNFT } from '@/lib/types';
@@ -28,7 +28,7 @@ export default function VerifyPage() {
   const [computedHash, setComputedHash] = useState('');
   const [isHashing, setIsHashing] = useState(false);
 
-  const { verifyDataset, verifying } = useTruthMarket();
+  const { verifyDataset, verifying } = useSealTrust();
   const [verificationResult, setVerificationResult] = useState<{
     found: boolean;
     dataset: DatasetNFT | null;

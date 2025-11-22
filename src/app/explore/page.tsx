@@ -16,12 +16,12 @@ import {
   Download
 } from '@phosphor-icons/react';
 import { formatAddress, formatHash } from '@/lib/utils';
-import { useTruthMarket } from '@/hooks/useTruthMarket';
+import { useSealTrust } from '@/hooks/useSealTrust';
 import { RegistryEntry } from '@/lib/types';
 import { walrusService } from '@/lib/walrus-service';
 
 export default function ExplorePage() {
-  const { getAllDatasets } = useTruthMarket();
+  const { getAllDatasets } = useSealTrust();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedFormat, setSelectedFormat] = useState('All');
