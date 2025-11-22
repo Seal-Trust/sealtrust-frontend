@@ -518,22 +518,24 @@ export default function RegisterPage() {
       }
 
       // CRITICAL: Capture the NFT returned by the Move function
-      // Pass allowlist ID as Option<ID> (Some(allowlistId))
+      // PRODUCTION: Use register_dataset with full TEE signature verification
       const [nft] = tx.moveCall({
-        target: `${CONFIG.VERIFICATION_PACKAGE}::truthmarket::register_dataset_dev`,
+        target: `${CONFIG.VERIFICATION_PACKAGE}::truthmarket::register_dataset`,
         typeArguments: [`${CONFIG.VERIFICATION_PACKAGE}::truthmarket::TRUTHMARKET`],
         arguments: [
-          tx.pure.vector('u8', metadata.name),
-          tx.pure.vector('u8', metadata.format),
-          tx.pure.u64(metadata.size),
-          tx.pure.vector('u8', metadata.original_hash),
-          tx.pure.vector('u8', hexToVecU8(metadataHash)),  // Convert hex string to bytes
-          tx.pure.string(blobId.trim()),      // Remove any whitespace
-          tx.pure.string(policyId.trim()),    // Remove any whitespace
-          tx.pure.option('id', allowlistId.trim()),  // Option<ID> for allowlist (validated)
-          tx.pure.u64(timestamp),
-          tx.pure.vector('u8', signatureBytes),
-          tx.object(CONFIG.ENCLAVE_ID),
+          tx.pure.vector('u8', metadata.dataset_id),      // dataset_id
+          tx.pure.vector('u8', metadata.name),            // name
+          tx.pure.vector('u8', metadata.description),     // description
+          tx.pure.vector('u8', metadata.format),          // format
+          tx.pure.u64(metadata.size),                     // size
+          tx.pure.vector('u8', metadata.original_hash),   // original_hash
+          tx.pure.vector('u8', hexToVecU8(metadataHash)), // metadata_hash
+          tx.pure.string(blobId.trim()),                  // walrus_blob_id
+          tx.pure.string(policyId.trim()),                // seal_policy_id
+          tx.pure.option('id', allowlistId.trim()),       // seal_allowlist_id
+          tx.pure.u64(timestamp),                         // timestamp_ms
+          tx.pure.vector('u8', signatureBytes),           // tee_signature
+          tx.object(CONFIG.ENCLAVE_ID),                   // enclave (Enclave<T>)
         ],
       });
 
