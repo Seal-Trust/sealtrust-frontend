@@ -466,6 +466,11 @@ export default function RegisterPage() {
       setProgress('Sending metadata to Nautilus TEE for verification...');
 
       const timestamp = Date.now();
+      // Convert address to raw 32 bytes (remove 0x prefix and convert hex to bytes)
+      // This MUST match Move's address::to_bytes(ctx.sender()) format
+      const uploaderAddress = currentAccount.address.startsWith('0x')
+        ? currentAccount.address.slice(2)
+        : currentAccount.address;
       const metadata = {
         dataset_id: stringToVecU8(crypto.randomUUID()),
         name: stringToVecU8(datasetFile.name),
@@ -476,7 +481,7 @@ export default function RegisterPage() {
         walrus_blob_id: stringToVecU8(blobId),
         seal_policy_id: stringToVecU8(policyId),
         timestamp,
-        uploader: stringToVecU8(currentAccount.address),
+        uploader: hexToVecU8(uploaderAddress),  // Raw 32 bytes, matches Move's address::to_bytes()
       };
 
       const nautilusRequest: MetadataVerificationRequest = { metadata };
