@@ -1,533 +1,287 @@
 # SealTrust Frontend
 
-Next.js web application for SealTrust dataset verification and storage platform.
+Next.js web application for dataset verification and encrypted storage.
+
+Built on Sui | Walrus | Seal | Nautilus TEE
 
 ---
 
-## Overview
+## The Problem
 
-This is the user-facing web application for SealTrust. It provides interfaces for:
+Users need a simple interface to:
+- Upload datasets with cryptographic verification
+- Control who can access their data
+- Download and verify dataset integrity
 
-- Dataset registration with cryptographic verification
-- Download and decryption of authorized datasets
-- Verification of dataset registrations
-- Wallet integration for authentication
+## The Solution
 
----
+A web app that handles the full pipeline: hash, encrypt, store, verify, and record.
 
-## Prerequisites
+```mermaid
+sequenceDiagram
+    participant U as User
+    participant F as Frontend
+    participant S as Seal
+    participant W as Walrus
+    participant N as Nautilus
+    participant C as Sui
 
-- Node.js 18 or higher
-- pnpm package manager
-- Sui wallet browser extension
-- Running Nautilus server (see `../nautilus-app`)
+    U->>F: Upload file
+    F->>F: Hash original
+    F->>S: Encrypt
+    F->>W: Store blob
+    F->>N: Verify metadata
+    N-->>F: Signature
+    F->>C: Register NFT
+    C-->>U: DatasetNFT
+```
 
 ---
 
 ## Quick Start
 
-### Install Dependencies
-
 ```bash
+# Install
 pnpm install
-```
 
-### Configure Environment
+# Configure
+cp .env.example .env.local
+# Edit .env.local with contract addresses
 
-Create `.env.local` file:
-
-```bash
-# Sui Network
-NEXT_PUBLIC_SUI_NETWORK=testnet
-
-# Deployed Contracts (update with actual addresses)
-NEXT_PUBLIC_VERIFICATION_PACKAGE=0xcd72d2f54513dcdad0497347ff47e2e0ba94733c78f3a80e19744d5ae8c35fca
-NEXT_PUBLIC_ENCLAVE_ID=0x4d26babef2b7d608ba2cad1f8258352da007a9347a28b40bb8c5541af507408c
-NEXT_PUBLIC_SEAL_PACKAGE_ID=0x...
-NEXT_PUBLIC_SEAL_ALLOWLIST_PACKAGE_ID=0x...
-
-# Services
-NEXT_PUBLIC_NAUTILUS_URL=http://localhost:3000
-```
-
-### Start Development Server
-
-```bash
+# Run
 pnpm dev
 ```
 
-Application runs on http://localhost:3000
+Open http://localhost:3000
 
 ---
 
-## Project Structure
+## Configuration
 
-```
-src/
-├── app/                    # Next.js App Router pages
-│   ├── register/          # Dataset registration page
-│   └── verify/            # Dataset verification page
-├── components/            # React components
-│   ├── dataset/          # Dataset-specific components
-│   ├── layout/           # Layout components
-│   └── wallet/           # Wallet integration
-├── lib/                  # Core services and utilities
-│   ├── seal-service.ts   # Seal encryption service
-│   ├── walrus-service.ts # Walrus storage service
-│   ├── types.ts          # TypeScript type definitions
-│   └── constants.ts      # Configuration constants
-└── hooks/                # React hooks
-    └── useNautilus.ts    # Nautilus integration hook
+Create `.env.local`:
+
+```env
+NEXT_PUBLIC_SUI_NETWORK=testnet
+
+# Deployed contracts
+NEXT_PUBLIC_VERIFICATION_PACKAGE=0xcdc25c90e328f2905c97c01e90424395dd7b10e67769fc8f4ae62b87f1e63e4e
+NEXT_PUBLIC_ENCLAVE_CONFIG_ID=0x55d6a15a5e8822b39f76dc53031d83beddc1e5b0e3ef804b82e8d4bfe4fbdc32
+NEXT_PUBLIC_SEAL_PACKAGE_ID=0x705937d7b0ffc7c37aa23a445ed52ae521a47adcdffa27fe965e0b73464a9925
+
+# Services
+NEXT_PUBLIC_NAUTILUS_URL=http://13.217.44.235:3000
 ```
 
 ---
 
-## Key Services
+## How We Use the Tech Stack
 
-### Seal Service
-
-Handles encryption and decryption using Seal:
+<details>
+<summary>Seal Encryption</summary>
 
 ```typescript
 import { sealService } from '@/lib/seal-service';
 
-// Hash file before encryption
+// Hash BEFORE encryption (for integrity verification)
 const hash = await sealService.hashFile(file);
 
-// Encrypt dataset
+// Encrypt with access control
 const { encryptedData, policyId } = await sealService.encryptDataset(
   file,
   SEAL_PACKAGE_ID
 );
-
-// Decrypt dataset (with session key management)
-const decrypted = await sealService.downloadAndDecryptDataset(
-  encryptedBlob,
-  policyId,
-  SEAL_PACKAGE_ID,
-  SEAL_ALLOWLIST_PACKAGE_ID,
-  userAddress,
-  suiClient,
-  signPersonalMessage
-);
-
-// Verify integrity
-const isValid = await sealService.verifyIntegrity(decrypted, originalHash);
 ```
 
-### Walrus Service
+</details>
 
-Handles storage operations via HTTP:
+<details>
+<summary>Walrus Storage</summary>
 
 ```typescript
 import { walrusService } from '@/lib/walrus-service';
 
 // Upload encrypted blob
-const { blobId, blobUrl } = await walrusService.uploadToWalrus(
-  encryptedFile,
-  5 // epochs
-);
+const { blobId } = await walrusService.uploadToWalrus(encryptedFile, 5);
 
-// Download encrypted blob
-const encryptedData = await walrusService.downloadFromWalrus(blobId);
+// Download for decryption
+const blob = await walrusService.downloadFromWalrus(blobId);
 ```
 
-### Nautilus Integration
+</details>
 
-Verifies metadata and obtains attestations:
+<details>
+<summary>Nautilus Verification</summary>
 
 ```typescript
-const metadata = {
-  dataset_id: stringToVecU8(crypto.randomUUID()),
-  name: stringToVecU8(fileName),
-  description: stringToVecU8(description),
-  format: stringToVecU8(fileType),
-  size: fileSize,
-  original_hash: stringToVecU8(hash),
-  walrus_blob_id: stringToVecU8(blobId),
-  seal_policy_id: stringToVecU8(policyId),
-  timestamp: Date.now(),
-  uploader: stringToVecU8(userAddress),
-};
-
 const response = await fetch(`${NAUTILUS_URL}/verify_metadata`, {
   method: 'POST',
   headers: { 'Content-Type': 'application/json' },
   body: JSON.stringify({ metadata }),
 });
 
-const attestation = await response.json();
-// attestation.signature contains hex-encoded signature
+const { signature } = await response.json();
+```
+
+</details>
+
+<details>
+<summary>Sui Registration</summary>
+
+```typescript
+const tx = new Transaction();
+
+tx.moveCall({
+  target: `${PACKAGE}::sealtrust::register_dataset_dev`,
+  typeArguments: [`${PACKAGE}::sealtrust::SEALTRUST`],
+  arguments: [
+    tx.pure.vector('u8', nameBytes),
+    tx.pure.vector('u8', formatBytes),
+    // ... other fields
+    tx.object(ENCLAVE_CONFIG_ID),
+  ],
+});
+
+await signAndExecuteTransaction({ transaction: tx });
+```
+
+</details>
+
+---
+
+## Pages
+
+| Route | Description |
+|-------|-------------|
+| `/` | Landing page |
+| `/register` | Upload and register dataset |
+| `/explore` | Browse registered datasets |
+| `/verify` | Verify dataset by hash |
+| `/dataset/[id]` | Dataset details and download |
+
+---
+
+## File Structure
+
+```
+src/
+├── app/
+│   ├── register/       # Upload flow
+│   ├── explore/        # Dataset browser
+│   ├── verify/         # Hash verification
+│   └── dataset/[id]/   # Details page
+├── components/
+│   ├── dataset/        # Dataset UI components
+│   └── wallet/         # Wallet connection
+├── lib/
+│   ├── seal-service.ts    # Seal encryption
+│   ├── walrus-service.ts  # Walrus storage
+│   ├── constants.ts       # Configuration
+│   └── types.ts           # TypeScript types
+└── hooks/
+    └── useNautilus.ts     # TEE integration
 ```
 
 ---
 
-## Important Implementation Details
+## Key Implementation Details
 
-### Hash Before Encryption
-
-Always hash files BEFORE encryption to enable integrity verification:
+### Hash Before Encrypt
 
 ```typescript
-// CORRECT
-const hash = await hashFile(file);           // 1. Hash first
-const encrypted = await encrypt(file);       // 2. Then encrypt
-await upload(encrypted);                     // 3. Upload encrypted
-
-// WRONG - cannot verify integrity later
+// CORRECT: Hash original, then encrypt
+const hash = await hashFile(file);
 const encrypted = await encrypt(file);
-const hash = await hashFile(encrypted);      // Useless hash
+
+// WRONG: Cannot verify integrity after decryption
+const encrypted = await encrypt(file);
+const hash = await hashFile(encrypted);
 ```
 
-### Session Key Management
+### Session Keys
 
-Session keys minimize wallet popups:
+Session keys minimize wallet popups. Created once, valid for 10 minutes:
 
 ```typescript
-// Created once, persisted for 10 minutes in IndexedDB
 const sessionKey = await SessionKey.create({
   address: userAddress,
   packageId: SEAL_PACKAGE_ID,
   ttlMin: 10,
   suiClient,
 });
-
-// User signs once
-const { signature } = await signPersonalMessage({
-  message: sessionKey.getPersonalMessage()
-});
-
-await sessionKey.setPersonalMessageSignature(signature);
-
-// Persisted for reuse
-await set(`sessionKey_${packageId}_${address}`, sessionKey.export());
 ```
 
-### Type Compatibility
+### BCS Serialization
 
-TypeScript types MUST match Rust and Move exactly for BCS serialization:
+TypeScript types MUST match Rust and Move exactly:
 
 ```typescript
-// DatasetVerification matches nautilus-app/src/lib.rs
-export interface DatasetVerification {
-  dataset_id: number[];      // Vec<u8>
-  name: number[];           // Vec<u8>
-  description: number[];    // Vec<u8>
-  format: number[];         // Vec<u8>
-  size: number;             // u64
-  original_hash: number[];  // Vec<u8>
-  walrus_blob_id: number[]; // Vec<u8>
-  seal_policy_id: number[]; // Vec<u8>
-  timestamp: number;        // u64
-  uploader: number[];       // Vec<u8>
+// Must match nautilus-app/src/lib.rs
+interface DatasetVerification {
+  dataset_id: number[];
+  name: number[];
+  description: number[];
+  format: number[];
+  size: number;
+  original_hash: number[];
+  walrus_blob_id: number[];
+  seal_policy_id: number[];
+  timestamp: number;
+  uploader: number[];
 }
 ```
 
 ---
 
-## Development Workflow
-
-### Registration Flow
-
-1. User uploads file in browser
-2. Compute hash of original file
-3. Encrypt file with Seal
-4. Upload encrypted blob to Walrus
-5. Send metadata to Nautilus for verification
-6. Receive signed attestation
-7. Register DatasetNFT on Sui blockchain
-8. Display receipt to user
-
-### Download Flow
-
-1. User requests dataset download
-2. Check authorization (optional)
-3. Download encrypted blob from Walrus
-4. Build Seal approval transaction
-5. Decrypt using session key
-6. Verify hash matches original
-7. Provide decrypted file to user
-
----
-
-## Common Issues
-
-### Nautilus Connection Failed
-
-**Problem**: Cannot connect to http://localhost:3000
-
-**Solution**:
-```bash
-cd ../nautilus-app
-cargo run --release
-```
-
-### Session Key Expired
-
-**Problem**: Wallet popup appears repeatedly
-
-**Solution**: Session keys expire after 10 minutes. This is expected behavior. Clear IndexedDB storage if keys become corrupted.
-
-### File Too Large
-
-**Problem**: Upload fails for large files
-
-**Solution**: Walrus has a 10 MB default limit. Implement chunking for larger files or use multiple blobs.
-
-### Type Mismatch Error
-
-**Problem**: BCS serialization fails
-
-**Solution**: Ensure TypeScript types match Rust/Move exactly. Check field order and types in all three languages.
-
----
-
-## Testing
-
-### Unit Tests
+## Development
 
 ```bash
-pnpm test
+# Dev server
+pnpm dev
+
+# Build
+pnpm build
+
+# Lint
+pnpm lint
+
+# Type check
+pnpm type-check
 ```
-
-### Integration Tests
-
-1. Start Nautilus server
-2. Run frontend
-3. Connect wallet
-4. Test registration flow
-5. Test download flow
-6. Verify on blockchain explorer
 
 ---
 
 ## Deployment
 
-### Production Deployment (Vercel Recommended)
-
-**Step 1: Build Locally**
+### Vercel (Recommended)
 
 ```bash
-pnpm build
-# Test production build
-pnpm start
-```
-
-**Step 2: Deploy to Vercel**
-
-```bash
-# Install Vercel CLI
-npm i -g vercel
-
-# Deploy
 vercel
-
-# Set environment variables in Vercel dashboard
 ```
 
-**Environment Variables for Production:**
+Set environment variables in Vercel dashboard.
 
-```env
-# Network
-NEXT_PUBLIC_SUI_NETWORK=mainnet
-
-# Deployed Contracts
-NEXT_PUBLIC_VERIFICATION_PACKAGE=0x<deployed_package_id>
-NEXT_PUBLIC_ENCLAVE_ID=0x<enclave_config_id>
-NEXT_PUBLIC_SEAL_PACKAGE_ID=0xa212c4c6c7183b911d0be8768f4cb1df7a383025b5d0ba0c014009f0f30f5f8d
-NEXT_PUBLIC_SEAL_ALLOWLIST_PACKAGE_ID=0x<allowlist_package_id>
-
-# Production Services
-NEXT_PUBLIC_NAUTILUS_URL=https://nautilus.yourdomain.com
-
-# Key Servers (your production server + backups)
-NEXT_PUBLIC_SEAL_KEY_SERVERS=0xYourKeyServer,0x<verified_provider_1>,0x<verified_provider_2>
-```
-
-**Step 3: Configure Custom Domain**
-
-In Vercel dashboard:
-1. Go to your project → Settings → Domains
-2. Add your domain (e.g., `sealtrust.app`)
-3. Update DNS records as instructed
-
-**Step 4: Set Up SSL**
-
-Vercel automatically provisions SSL certificates via Let's Encrypt.
-
-### Alternative: Docker Deployment
-
-**Create `Dockerfile`:**
-
-```dockerfile
-FROM node:20-alpine AS base
-
-# Install dependencies
-FROM base AS deps
-WORKDIR /app
-COPY package.json pnpm-lock.yaml ./
-RUN corepack enable pnpm && pnpm install --frozen-lockfile
-
-# Build
-FROM base AS builder
-WORKDIR /app
-COPY --from=deps /app/node_modules ./node_modules
-COPY . .
-RUN corepack enable pnpm && pnpm build
-
-# Production
-FROM base AS runner
-WORKDIR /app
-ENV NODE_ENV=production
-
-RUN addgroup --system --gid 1001 nodejs
-RUN adduser --system --uid 1001 nextjs
-
-COPY --from=builder /app/public ./public
-COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
-COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
-
-USER nextjs
-EXPOSE 3000
-ENV PORT=3000
-
-CMD ["node", "server.js"]
-```
-
-**Deploy with Docker:**
+### Docker
 
 ```bash
-# Build image
-docker build -t sealtrust-frontend:latest .
-
-# Run container
-docker run -p 3000:3000 \
-  -e NEXT_PUBLIC_SUI_NETWORK=mainnet \
-  -e NEXT_PUBLIC_NAUTILUS_URL=https://nautilus.sealtrust.app \
-  sealtrust-frontend:latest
-```
-
-### Production Checklist
-
-- [ ] Deploy Move contracts to mainnet
-- [ ] Deploy Nautilus to AWS Nitro Enclave
-- [ ] Deploy Seal key server (or use verified providers)
-- [ ] Update all environment variables
-- [ ] Test with real transactions
-- [ ] Set up monitoring (Vercel Analytics / CloudWatch)
-- [ ] Configure custom domain with SSL
-- [ ] Test wallet connections
-- [ ] Verify Seal encryption/decryption works
-- [ ] Check CSP headers allow all services
-
----
-
-## Performance Optimization
-
-### Session Key Persistence
-
-Session keys are cached in IndexedDB to avoid repeated wallet signatures:
-
-```typescript
-// Check for existing valid session key
-const stored = await get(`sessionKey_${packageId}_${address}`);
-if (stored) {
-  const imported = await SessionKey.import(stored, suiClient);
-  if (!imported.isExpired()) {
-    return imported; // Reuse, no wallet popup
-  }
-}
-```
-
-### Lazy Loading
-
-Large components are lazy loaded:
-
-```typescript
-const DatasetDownload = dynamic(() =>
-  import('@/components/dataset/DatasetDownload')
-);
+docker build -t sealtrust-frontend .
+docker run -p 3000:3000 sealtrust-frontend
 ```
 
 ---
 
-## Security Considerations
+## Troubleshooting
 
-### Client-Side Encryption
-
-All encryption happens in the browser before data transmission:
-
-```typescript
-// Data never leaves device unencrypted
-const encrypted = await sealClient.encrypt({
-  data: fileBuffer,
-  threshold: 2,
-  packageId: SEAL_PACKAGE_ID,
-});
-
-// Only encrypted data is uploaded
-await walrusService.uploadToWalrus(encrypted);
-```
-
-### Signature Validation
-
-Nautilus signatures are hex-encoded:
-
-```typescript
-// Convert hex signature to bytes
-const signatureBytes = hexToVecU8(attestation.signature);
-
-// NOT base64 - this would fail
-const wrong = Array.from(atob(attestation.signature), c => c.charCodeAt(0));
-```
-
-### Hash Integrity
-
-Original hash is stored on-chain for verification:
-
-```typescript
-// Store in DatasetNFT
-original_hash: vector<u8>  // Hash of UNENCRYPTED file
-
-// Verify after decryption
-const actualHash = await hashFile(decryptedData);
-assert(actualHash === originalHash, "Integrity check failed");
-```
+| Issue | Solution |
+|-------|----------|
+| Nautilus connection failed | Check `NEXT_PUBLIC_NAUTILUS_URL` and ensure enclave is running |
+| Wallet popup every time | Session key expired (normal after 10 min) |
+| Hash mismatch on download | File was uploaded before integrity fix - re-upload |
+| CSP blocking key servers | Already configured in `next.config.ts` |
 
 ---
 
-## Network Configuration
+## Reference
 
-### Sui Testnet
-- RPC: https://fullnode.testnet.sui.io:443
-- Explorer: https://testnet.suivision.xyz/
-- Faucet: https://faucet.testnet.sui.io/
-
-### Walrus Testnet
-- Publisher: https://publisher.walrus-testnet.walrus.space
-- Aggregator: https://aggregator.walrus-testnet.walrus.space
-
----
-
-## Related Documentation
-
-- Main README: `../README.md`
-- Architecture: `../ARCHITECTURE.md`
-- Move Contracts: `../move/truthmarket-verification/`
-- Nautilus Server: `../nautilus-app/`
-
----
-
-## Support
-
-For issues and questions:
-- Check main README
-- Review architecture documentation
-- Examine code examples in `/src/lib/`
-- Test with Nautilus server running locally
-
----
-
-## License
-
-Apache License 2.0
+- [Sui dApp Kit](https://sdk.mystenlabs.com/dapp-kit)
+- [Seal SDK](https://github.com/MystenLabs/seal)
+- [Walrus](https://docs.walrus.site/)
