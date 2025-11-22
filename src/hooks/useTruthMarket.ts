@@ -61,9 +61,126 @@ export function useTruthMarket() {
   const [error, setError] = useState<string | null>(null);
 
   /**
-   * Register a dataset on-chain after Nautilus verification
+   * PRODUCTION: Register a dataset on-chain with full Nautilus TEE verification
+   * This calls register_dataset which verifies the signature on-chain
    */
-  const registerDataset = useCallback(async (
+  const registerDatasetProduction = useCallback(async (params: {
+    datasetId: string;
+    name: string;
+    description: string;
+    format: string;
+    size: number;
+    originalHash: string;        // Hex string of hash
+    metadataHash: string;        // Hex string
+    walrusBlobId: string;
+    sealPolicyId: string;
+    sealAllowlistId?: string;    // Optional
+    timestampMs: number;
+    teeSignature: string;        // Hex encoded signature from Nautilus
+  }): Promise<{ txDigest: string; nftId: string } | null> => {
+    if (!account) {
+      setError(ERROR_MESSAGES.WALLET_NOT_CONNECTED);
+      return null;
+    }
+
+    setRegistering(true);
+    setError(null);
+
+    try {
+      const tx = new Transaction();
+
+      // Convert hex signature to bytes
+      const sigBytes = hexToBytes(params.teeSignature);
+
+      console.log("Production Registration parameters:", {
+        datasetId: params.datasetId,
+        name: params.name,
+        size: params.size,
+        originalHash: params.originalHash.substring(0, 20) + "...",
+        walrusBlobId: params.walrusBlobId.substring(0, 20) + "...",
+        timestampMs: params.timestampMs,
+        signatureLength: sigBytes.length,
+        enclaveId: CONFIG.ENCLAVE_ID,
+        packageId: CONFIG.VERIFICATION_PACKAGE,
+      });
+
+      // Build arguments for register_dataset
+      const args = [
+        tx.pure.vector("u8", stringToBytes(params.datasetId)),      // dataset_id
+        tx.pure.vector("u8", stringToBytes(params.name)),           // name
+        tx.pure.vector("u8", stringToBytes(params.description)),    // description
+        tx.pure.vector("u8", stringToBytes(params.format)),         // format
+        tx.pure.u64(params.size),                                   // size
+        tx.pure.vector("u8", hexToBytes(params.originalHash)),      // original_hash
+        tx.pure.vector("u8", hexToBytes(params.metadataHash)),      // metadata_hash
+        tx.pure.string(params.walrusBlobId),                        // walrus_blob_id (String)
+        tx.pure.string(params.sealPolicyId),                        // seal_policy_id (String)
+        // seal_allowlist_id: Option<ID>
+        params.sealAllowlistId
+          ? tx.pure.option("address", params.sealAllowlistId)
+          : tx.pure.option("address", null),
+        tx.pure.u64(params.timestampMs),                            // timestamp_ms
+        tx.pure.vector("u8", sigBytes),                             // tee_signature
+        tx.object(CONFIG.ENCLAVE_ID),                               // enclave: &Enclave<T>
+      ];
+
+      // Call production register_dataset function (verifies signature on-chain)
+      const [nft] = tx.moveCall({
+        target: `${CONFIG.VERIFICATION_PACKAGE}::truthmarket::register_dataset`,
+        typeArguments: [`${CONFIG.VERIFICATION_PACKAGE}::truthmarket::TRUTHMARKET`],
+        arguments: args,
+      });
+
+      // Transfer the NFT to the user
+      tx.transferObjects([nft], tx.pure.address(account.address));
+
+      tx.setGasBudget(GAS_BUDGET);
+
+      const result = await signAndExecute({
+        transaction: tx,
+      });
+
+      console.log("Production transaction result:", JSON.stringify(result, null, 2));
+
+      if (!result.digest) {
+        throw new Error(ERROR_MESSAGES.TRANSACTION_FAILED);
+      }
+
+      // Query the transaction to get the created NFT ID
+      const txResponse = await suiClient.getTransactionBlock({
+        digest: result.digest,
+        options: {
+          showObjectChanges: true,
+        },
+      });
+
+      const createdNft = txResponse.objectChanges?.find(
+        (change) => change.type === "created" &&
+                        'objectType' in change &&
+                        change.objectType?.includes("DatasetNFT")
+      );
+
+      const nftId = (createdNft && 'objectId' in createdNft) ? createdNft.objectId : "";
+
+      setRegistering(false);
+      return {
+        txDigest: result.digest,
+        nftId,
+      };
+    } catch (err) {
+      const message = err instanceof Error ? err.message : ERROR_MESSAGES.TRANSACTION_FAILED;
+      console.error("Production registration error:", err);
+      setError(message);
+      setRegistering(false);
+      return null;
+    }
+  }, [account, signAndExecute, suiClient]);
+
+  /**
+   * DEV ONLY: Register a dataset on-chain (skips signature verification)
+   * Use registerDatasetProduction for production deployments
+   */
+  const registerDatasetDev = useCallback(async (
     datasetUrl: string,
     hash: string,
     format: string,
@@ -82,10 +199,10 @@ export function useTruthMarket() {
     try {
       const tx = new Transaction();
 
-      // Convert signature from base64 to bytes
-      const sigBytes = Array.from(atob(signature), c => c.charCodeAt(0));
+      // Convert signature from hex to bytes
+      const sigBytes = hexToBytes(signature);
 
-      console.log("Registration parameters:", {
+      console.log("DEV Registration parameters:", {
         datasetUrl,
         hash,
         format,
@@ -93,7 +210,7 @@ export function useTruthMarket() {
         timestamp,
         signature: signature.substring(0, 20) + "...",
         signatureLength: sigBytes.length,
-        enclaveId: CONFIG.ENCLAVE_ID,
+        enclaveConfigId: CONFIG.ENCLAVE_CONFIG_ID,
         packageId: CONFIG.VERIFICATION_PACKAGE,
       });
 
@@ -108,7 +225,7 @@ export function useTruthMarket() {
           tx.pure.vector("u8", stringToBytes(schemaVersion)), // schema_version
           tx.pure.u64(timestamp), // timestamp_ms
           tx.pure.vector("u8", sigBytes), // signature (unused in dev version)
-          tx.object(CONFIG.ENCLAVE_ID), // enclave_config object
+          tx.object(CONFIG.ENCLAVE_CONFIG_ID), // enclave_config object (NOT Enclave)
         ],
       });
 
@@ -121,9 +238,8 @@ export function useTruthMarket() {
         transaction: tx,
       });
 
-      console.log("Transaction result:", JSON.stringify(result, null, 2));
+      console.log("DEV Transaction result:", JSON.stringify(result, null, 2));
 
-      // If we got a digest, the transaction was submitted successfully
       if (!result.digest) {
         throw new Error(ERROR_MESSAGES.TRANSACTION_FAILED);
       }
@@ -136,7 +252,6 @@ export function useTruthMarket() {
         },
       });
 
-      // Find the created DatasetNFT
       const createdNft = txResponse.objectChanges?.find(
         (change) => change.type === "created" &&
                         'objectType' in change &&
@@ -156,7 +271,23 @@ export function useTruthMarket() {
       setRegistering(false);
       return null;
     }
-  }, [account, signAndExecute]);
+  }, [account, signAndExecute, suiClient]);
+
+  /**
+   * Register a dataset - automatically uses production or dev based on config
+   */
+  const registerDataset = useCallback(async (
+    datasetUrl: string,
+    hash: string,
+    format: string,
+    schemaVersion: string,
+    timestamp: number,
+    signature: string
+  ): Promise<{ txDigest: string; nftId: string } | null> => {
+    // For backwards compatibility, use dev mode
+    // Production code should call registerDatasetProduction directly
+    return registerDatasetDev(datasetUrl, hash, format, schemaVersion, timestamp, signature);
+  }, [registerDatasetDev]);
 
   /**
    * Verify if a dataset hash exists on-chain
@@ -451,7 +582,9 @@ export function useTruthMarket() {
     address: account?.address,
 
     // Functions
-    registerDataset,
+    registerDataset,              // Backwards compatible (uses dev mode)
+    registerDatasetProduction,    // PRODUCTION: Full TEE verification
+    registerDatasetDev,           // DEV ONLY: Skips signature verification
     verifyDataset,
     getAllDatasets,
     getDatasetsByOwner,

@@ -1,14 +1,25 @@
 // TruthMarket Configuration
 export const CONFIG = {
-  // Nautilus TEE Endpoint (replace with actual deployed URL)
-  NAUTILUS_URL: process.env.NEXT_PUBLIC_NAUTILUS_URL || "http://localhost:3000",
+  // Nautilus TEE Endpoint - PRODUCTION AWS Nitro Enclave
+  NAUTILUS_URL: process.env.NEXT_PUBLIC_NAUTILUS_URL || "http://13.217.44.235:3000",
 
   // Sui Network
   SUI_NETWORK: (process.env.NEXT_PUBLIC_SUI_NETWORK || "testnet") as "mainnet" | "testnet" | "devnet",
 
-  // Move Package IDs (replace with actual deployed package IDs)
-  VERIFICATION_PACKAGE: process.env.NEXT_PUBLIC_VERIFICATION_PACKAGE || "0x...",
-  ENCLAVE_ID: process.env.NEXT_PUBLIC_ENCLAVE_ID || "0x...",
+  // Move Package IDs - PRODUCTION (deployed 2025-11-22)
+  VERIFICATION_PACKAGE: process.env.NEXT_PUBLIC_VERIFICATION_PACKAGE || "0xe9cc4d6d70a38c9e32c296007deb67d1503a2d77963f2b9e0782cc396a68834a",
+
+  // Enclave Object ID - Use this for register_dataset (PRODUCTION)
+  ENCLAVE_ID: process.env.NEXT_PUBLIC_ENCLAVE_ID || "0x2f48b9d38d71982ad858f679ce8c1f3975b1dfc76900a673f0046eb9d2021f3f",
+
+  // EnclaveConfig Object ID - Use for register_dataset_dev (DEV ONLY) or admin operations
+  ENCLAVE_CONFIG_ID: process.env.NEXT_PUBLIC_ENCLAVE_CONFIG_ID || "0x97991f6c063f189b50b395ad21545fd17377f95e08586fa99a23b6fc131a4c07",
+
+  // Enclave Package ID (official Nautilus)
+  ENCLAVE_PACKAGE_ID: "0x0ff344b5b6f07b79b56a4ce1e9b1ef5a96ba219f6e6f2c49f194dee29dfc8b7f",
+
+  // Use production registration (true) or dev mode (false)
+  USE_PRODUCTION_REGISTRATION: process.env.NEXT_PUBLIC_USE_PRODUCTION === "true" || true,
 
   // Seal Configuration for Encryption
   // Official Seal allowlist package deployed on testnet (from Seal examples)
