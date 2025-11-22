@@ -1,4 +1,4 @@
-// TruthMarket Type Definitions
+// SealTrust Type Definitions
 
 // Dataset verification request to Nautilus
 export interface DatasetRequest {
@@ -14,7 +14,7 @@ export interface ProcessDataRequest {
 }
 
 // Dataset verification data V3 (matches Move struct EXACTLY - CRITICAL!)
-// This MUST match truthmarket.move line 40-51 and nautilus-app/src/lib.rs line 62-73
+// This MUST match sealtrust.move line 40-51 and nautilus-app/src/lib.rs line 62-73
 export interface DatasetVerification {
   dataset_id: number[];          // Vec<u8> - Unique dataset ID
   name: number[];                // Vec<u8> - Dataset name
@@ -42,7 +42,7 @@ export interface ProcessedDataResponse {
 }
 
 // DatasetNFT on-chain V3 (from Move contract)
-// This MUST match truthmarket.move line 15-40
+// This MUST match sealtrust.move line 15-40
 export interface DatasetNFT {
   id: string;
 

@@ -537,7 +537,7 @@ export default function DatasetDetailPage() {
             <div className="flex items-start gap-4">
               <Shield weight="duotone" size={32} className="text-blue-600 flex-shrink-0 mt-1" />
               <div>
-                <h3 className="font-bold text-blue-900 mb-2">How TruthMarket Protects Your Data</h3>
+                <h3 className="font-bold text-blue-900 mb-2">How SealTrust Protects Your Data</h3>
                 <ul className="space-y-2 text-sm text-blue-800">
                   <li className="flex items-start gap-2">
                     <CheckCircle weight="fill" size={16} className="flex-shrink-0 mt-0.5" />

@@ -49,7 +49,7 @@ interface SuiObjectOwner {
 }
 
 /**
- * Main hook for TruthMarket blockchain operations
+ * Main hook for SealTrust blockchain operations
  */
 export function useTruthMarket() {
   const account = useCurrentAccount();

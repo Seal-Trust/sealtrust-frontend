@@ -474,7 +474,7 @@ export default function RegisterPage() {
       const metadata = {
         dataset_id: stringToVecU8(crypto.randomUUID()),
         name: stringToVecU8(datasetFile.name),
-        description: stringToVecU8(description || 'Dataset registered via TruthMarket'),
+        description: stringToVecU8(description || 'Dataset registered via SealTrust'),
         format: stringToVecU8(datasetFile.type || format),
         size: datasetFile.size,
         original_hash: hexToVecU8(originalHash),  // Convert hex string to bytes

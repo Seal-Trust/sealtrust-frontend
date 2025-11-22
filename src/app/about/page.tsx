@@ -23,7 +23,7 @@ export default function AboutPage() {
             {/* Page Title */}
             <div className="mb-12">
               <h1 className="text-4xl lg:text-5xl font-bold tracking-tight mb-4">
-                About TruthMarket
+                About SealTrust
               </h1>
               <p className="text-xl text-muted-foreground">
                 Cryptographic timestamp verification for AI training datasets using Trusted Execution Environments and blockchain.
@@ -42,12 +42,12 @@ export default function AboutPage() {
                 </p>
 
                 <p>
-                  TruthMarket provides cryptographic proof of dataset authenticity by combining three cutting-edge
-                  technologies: AWS Nitro Enclaves (Nautilus), Sui blockchain, and Walrus decentralized storage.
+                  SealTrust provides cryptographic proof of dataset authenticity by combining cutting-edge
+                  technologies: AWS Nitro Enclaves (Nautilus), Sui blockchain, Walrus decentralized storage, and Seal encryption.
                 </p>
 
                 <p>
-                  Every dataset registered through TruthMarket receives a tamper-proof timestamp that proves
+                  Every dataset registered through SealTrust receives a tamper-proof timestamp that proves
                   exactly what data existed at a specific point in time, verified by hardware-backed cryptography
                   and recorded immutably on-chain.
                 </p>
@@ -231,14 +231,14 @@ export default function AboutPage() {
               <div className="bg-white rounded-xl border border-border p-6">
                 <div className="space-y-4 text-sm text-muted-foreground">
                   <p>
-                    <strong className="text-foreground">Threat Model:</strong> TruthMarket protects against dataset
+                    <strong className="text-foreground">Threat Model:</strong> SealTrust protects against dataset
                     tampering, backdooring, and provenance disputes. It does NOT protect against malicious dataset
                     creators or content validation (garbage in = garbage out).
                   </p>
 
                   <p>
                     <strong className="text-foreground">Trust Assumptions:</strong> Users trust AWS Nitro hardware,
-                    Sui blockchain validators, and Walrus storage nodes. No trust required in TruthMarket operators.
+                    Sui blockchain validators, and Walrus storage nodes. No trust required in SealTrust operators.
                   </p>
 
                   <p>

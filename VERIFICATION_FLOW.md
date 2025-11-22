@@ -1,8 +1,8 @@
-# TruthMarket Verification Flow - Complete Architecture
+# SealTrust Verification Flow - Complete Architecture
 
 ## Overview
 
-The TruthMarket system uses a **connected architecture** where:
+The SealTrust system uses a **connected architecture** where:
 1. Datasets are registered on-chain after Nautilus TEE verification
 2. The explore page queries real blockchain data
 3. Verification checks are performed against on-chain DatasetNFTs

@@ -51,14 +51,14 @@ export function Header() {
           <Link href="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
             <Image
               src="/logo.svg"
-              alt="TruthMarket"
+              alt="SealTrust"
               width={40}
               height={40}
               className="rounded-lg"
               priority
             />
             <span className="text-xl font-bold gradient-text">
-              TruthMarket
+              SealTrust
             </span>
           </Link>
 

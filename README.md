@@ -1,12 +1,12 @@
-# TruthMarket Frontend
+# SealTrust Frontend
 
-Next.js web application for TruthMarket dataset verification and storage platform.
+Next.js web application for SealTrust dataset verification and storage platform.
 
 ---
 
 ## Overview
 
-This is the user-facing web application for TruthMarket. It provides interfaces for:
+This is the user-facing web application for SealTrust. It provides interfaces for:
 
 - Dataset registration with cryptographic verification
 - Download and decryption of authorized datasets
@@ -348,7 +348,7 @@ NEXT_PUBLIC_SEAL_KEY_SERVERS=0xYourKeyServer,0x<verified_provider_1>,0x<verified
 
 In Vercel dashboard:
 1. Go to your project → Settings → Domains
-2. Add your domain (e.g., `app.truthmarket.io`)
+2. Add your domain (e.g., `sealtrust.app`)
 3. Update DNS records as instructed
 
 **Step 4: Set Up SSL**
@@ -398,13 +398,13 @@ CMD ["node", "server.js"]
 
 ```bash
 # Build image
-docker build -t truthmarket-frontend:latest .
+docker build -t sealtrust-frontend:latest .
 
 # Run container
 docker run -p 3000:3000 \
   -e NEXT_PUBLIC_SUI_NETWORK=mainnet \
-  -e NEXT_PUBLIC_NAUTILUS_URL=https://nautilus.yourdomain.com \
-  truthmarket-frontend:latest
+  -e NEXT_PUBLIC_NAUTILUS_URL=https://nautilus.sealtrust.app \
+  sealtrust-frontend:latest
 ```
 
 ### Production Checklist

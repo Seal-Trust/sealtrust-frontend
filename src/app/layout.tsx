@@ -3,29 +3,29 @@ import "./globals.css";
 import { Providers } from "./providers";
 
 export const metadata: Metadata = {
-  title: "TruthMarket - AI Dataset Verification Platform",
-  description: "Cryptographic verification and timestamping for AI training datasets. Powered by Sui, Walrus, and Nautilus TEE.",
-  keywords: "ai, dataset, verification, tee, blockchain, sui, walrus, nautilus, truthmarket, timestamp",
-  authors: [{ name: "TruthMarket" }],
+  title: "SealTrust - AI Dataset Verification Platform",
+  description: "Cryptographic verification and timestamping for AI training datasets. Powered by Sui, Walrus, Seal, and Nautilus TEE.",
+  keywords: "ai, dataset, verification, tee, blockchain, sui, walrus, seal, nautilus, sealtrust, timestamp",
+  authors: [{ name: "SealTrust" }],
   openGraph: {
-    title: "TruthMarket - AI Dataset Verification Platform",
+    title: "SealTrust - AI Dataset Verification Platform",
     description: "Cryptographic verification and timestamping for AI training datasets",
     type: "website",
     locale: "en_US",
-    siteName: "TruthMarket",
+    siteName: "SealTrust",
   },
   twitter: {
     card: "summary_large_image",
-    title: "TruthMarket - AI Dataset Verification Platform",
+    title: "SealTrust - AI Dataset Verification Platform",
     description: "Cryptographic verification and timestamping for AI training datasets",
   },
   icons: {
-    icon: "/truthmarket.svg",
-    shortcut: "/truthmarket.svg",
-    apple: "/truthmarket.svg",
+    icon: "/sealtrust.svg",
+    shortcut: "/sealtrust.svg",
+    apple: "/sealtrust.svg",
     other: {
       rel: "apple-touch-icon-precomposed",
-      url: "/truthmarket.svg",
+      url: "/sealtrust.svg",
     },
   },
 };

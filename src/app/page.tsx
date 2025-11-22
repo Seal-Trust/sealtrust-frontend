@@ -208,7 +208,7 @@ export default function Home() {
           <div className="container-fluid">
             <div className="text-center mb-12 space-y-4">
               <h2 className="text-4xl font-bold">
-                Why AI teams choose TruthMarket
+                Why AI teams choose SealTrust
               </h2>
               <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
                 The only platform combining TEE verification, blockchain timestamps, and decentralized storage
@@ -245,7 +245,7 @@ export default function Home() {
                 </h2>
                 <p className="text-xl text-muted-foreground mb-8">
                   Say goodbye to dataset tampering, training data disputes, and unverifiable provenance.
-                  With TruthMarket, your datasets are cryptographically timestamped and immutably recorded.
+                  With SealTrust, your datasets are cryptographically timestamped and immutably recorded.
                 </p>
                 <ul className="space-y-4">
                   {benefits.map((benefit, index) => {
@@ -286,7 +286,7 @@ export default function Home() {
                     </div>
                     <div className="border-t-2 border-primary pt-6">
                       <div className="flex items-center justify-between">
-                        <span className="font-semibold text-primary">TruthMarket</span>
+                        <span className="font-semibold text-primary">SealTrust</span>
                         <span className="font-bold text-success">TEE + Blockchain + Decentralized</span>
                       </div>
                     </div>
@@ -331,12 +331,12 @@ export default function Home() {
               <div className="flex items-center gap-3">
                 <Image
                   src="/logo.svg"
-                  alt="TruthMarket"
+                  alt="SealTrust"
                   width={32}
                   height={32}
                   className="rounded-lg"
                 />
-                <span className="font-semibold">TruthMarket</span>
+                <span className="font-semibold">SealTrust</span>
                 <span className="text-muted-foreground">© 2025</span>
               </div>
 

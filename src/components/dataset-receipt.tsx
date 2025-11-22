@@ -62,7 +62,7 @@ export function DatasetReceipt({
       });
 
       const link = document.createElement('a');
-      link.download = `truthmarket-receipt-${hash.slice(0, 12)}.png`;
+      link.download = `sealtrust-receipt-${hash.slice(0, 12)}.png`;
       link.href = dataUrl;
       link.click();
     } catch (error) {
@@ -76,8 +76,8 @@ export function DatasetReceipt({
     if (navigator.share) {
       try {
         await navigator.share({
-          title: 'TruthMarket Dataset Receipt',
-          text: `Verified dataset registration on TruthMarket`,
+          title: 'SealTrust Dataset Receipt',
+          text: `Verified dataset registration on SealTrust`,
           url: receiptUrl,
         });
       } catch (error) {
@@ -103,14 +103,14 @@ export function DatasetReceipt({
           <div className="flex items-center gap-3">
             <Image
               src="/logo.svg"
-              alt="TruthMarket"
+              alt="SealTrust"
               width={40}
               height={40}
               className="filter drop-shadow-[0_0_10px_rgba(249,115,22,0.3)]"
             />
             <div>
               <h3 className="text-xl font-medium bg-gradient-to-b from-gray-900 via-gray-800 to-gray-600 bg-clip-text text-transparent">
-                TRUTH MARKET
+                SEAL TRUST
               </h3>
               <p className="text-xs text-gray-500">Cryptographic Dataset Registry</p>
             </div>
@@ -270,7 +270,7 @@ export function DatasetReceipt({
         <div className="absolute bottom-4 right-4 opacity-5">
           <Image
             src="/logo.svg"
-            alt="TruthMarket"
+            alt="SealTrust"
             width={80}
             height={80}
           />

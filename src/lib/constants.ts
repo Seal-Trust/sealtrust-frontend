@@ -1,4 +1,4 @@
-// TruthMarket Configuration
+// SealTrust Configuration
 export const CONFIG = {
   // Nautilus TEE Endpoint - PRODUCTION AWS Nitro Enclave
   NAUTILUS_URL: process.env.NEXT_PUBLIC_NAUTILUS_URL || "http://13.217.44.235:3000",
@@ -18,7 +18,7 @@ export const CONFIG = {
   // Enclave Package ID (official Nautilus)
   ENCLAVE_PACKAGE_ID: "0x0ff344b5b6f07b79b56a4ce1e9b1ef5a96ba219f6e6f2c49f194dee29dfc8b7f",
   // Seal Configuration for Encryption
-  // TruthMarket's allowlist package deployed on testnet (2025-11-22)
+  // SealTrust's allowlist package deployed on testnet (2025-11-22)
   SEAL_PACKAGE_ID: process.env.NEXT_PUBLIC_SEAL_PACKAGE_ID || "0x705937d7b0ffc7c37aa23a445ed52ae521a47adcdffa27fe965e0b73464a9925",
   SEAL_ALLOWLIST_PACKAGE_ID: process.env.NEXT_PUBLIC_SEAL_ALLOWLIST_PACKAGE_ID || "0x705937d7b0ffc7c37aa23a445ed52ae521a47adcdffa27fe965e0b73464a9925",
 

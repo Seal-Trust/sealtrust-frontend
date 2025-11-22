@@ -73,7 +73,7 @@ export async function GET(request: NextRequest) {
     const response = await fetch(url, {
       signal: AbortSignal.timeout(60000), // 60s timeout
       headers: {
-        'User-Agent': 'TruthMarket/1.0',
+        'User-Agent': 'SealTrust/1.0',
       }
     });
 

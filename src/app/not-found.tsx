@@ -9,7 +9,7 @@ export default function NotFound() {
         <div className="flex justify-center">
           <Image
             src="/logo.svg"
-            alt="TruthMarket"
+            alt="SealTrust"
             width={80}
             height={80}
             className="filter drop-shadow-[0_0_20px_rgba(249,115,22,0.3)]"
