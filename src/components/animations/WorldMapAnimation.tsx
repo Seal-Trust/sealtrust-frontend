@@ -1,6 +1,5 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
 import Lottie from 'lottie-react';
 import worldMapAnimation from '../../../public/Worldmap.json';
 

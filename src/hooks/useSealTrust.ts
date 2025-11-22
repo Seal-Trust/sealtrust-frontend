@@ -9,10 +9,9 @@ import { CONFIG, ERROR_MESSAGES, GAS_BUDGET } from "../lib/constants";
 import {
   DatasetNFT,
   RegistryEntry,
-  ServiceState,
   VerificationResult,
 } from "../lib/types";
-import { hexToBytes, stringToBytes, bytesToString, bytesToHex } from "../lib/utils/crypto";
+import { hexToBytes, stringToBytes, bytesToHex } from "../lib/utils/crypto";
 
 // Type definitions for Sui object responses
 interface SuiObjectChange {

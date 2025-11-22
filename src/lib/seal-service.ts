@@ -301,9 +301,9 @@ export class SealService {
 
     // Build transaction bytes for Seal verification
     // IMPORTANT: Seal only needs the transaction kind for verification, not the full transaction
+    tx.setSender(address);
     const txBytes = await tx.build({
       client: suiClient,
-      sender: address,  // Required in @mysten/sui 1.45.0
       onlyTransactionKind: true,  // Critical: Seal needs only transaction kind bytes
     });
     console.log('Approval transaction built:', txBytes.length, 'bytes');

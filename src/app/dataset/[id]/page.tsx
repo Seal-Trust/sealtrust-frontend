@@ -134,6 +134,7 @@ export default function DatasetDetailPage() {
   // Discover Cap ID when user owns the dataset
   useEffect(() => {
     discoverCap();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dataset, currentAccount, suiClient]);
 
   const handleCopyLink = () => {

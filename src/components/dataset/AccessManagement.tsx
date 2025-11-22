@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useCurrentAccount, useSignAndExecuteTransaction, useSuiClient } from '@mysten/dapp-kit';
 import { toast } from 'sonner';
-import { X, Plus, Trash2, Users, Shield, AlertCircle, ListPlus } from 'lucide-react';
+import { Plus, Trash2, Users, Shield, AlertCircle, ListPlus } from 'lucide-react';
 import { allowlistService } from '@/lib/allowlist-service';
 import { CONFIG } from '@/lib/constants';
 
@@ -54,6 +54,7 @@ export function AccessManagement({
   // Initial load
   useEffect(() => {
     loadMembers();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [allowlistId]);
 
   // Check if current user is owner

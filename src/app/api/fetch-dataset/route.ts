@@ -183,7 +183,7 @@ export async function HEAD(request: NextRequest) {
       }
     });
 
-  } catch (error) {
+  } catch {
     return new NextResponse(null, { status: 500 });
   }
 }

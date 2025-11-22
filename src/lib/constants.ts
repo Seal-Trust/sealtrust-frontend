@@ -1,7 +1,7 @@
 // SealTrust Configuration
 export const CONFIG = {
-  // Nautilus TEE Endpoint - PRODUCTION AWS Nitro Enclave
-  NAUTILUS_URL: process.env.NEXT_PUBLIC_NAUTILUS_URL || "http://13.217.44.235:3000",
+  // Nautilus TEE Endpoint - PRODUCTION AWS Nitro Enclave (via Cloudflare Tunnel)
+  NAUTILUS_URL: process.env.NEXT_PUBLIC_NAUTILUS_URL || "https://nautilus.sealtrust.app",
 
   // Sui Network
   SUI_NETWORK: (process.env.NEXT_PUBLIC_SUI_NETWORK || "testnet") as "mainnet" | "testnet" | "devnet",

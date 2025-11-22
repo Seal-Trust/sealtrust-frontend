@@ -1,13 +1,11 @@
 import { useState, useCallback } from "react";
 import { CONFIG, ERROR_MESSAGES } from "~~/lib/constants";
 import {
-  DatasetRequest,
   ProcessDataRequest,
   ProcessedDataResponse,
   ServiceState,
   NautilusError,
 } from "~~/lib/types";
-import { hexToBytes } from "~~/lib/utils/crypto";
 
 interface NautilusVerification {
   hash: string;

@@ -80,7 +80,7 @@ export function DatasetReceipt({
           text: `Verified dataset registration on SealTrust`,
           url: receiptUrl,
         });
-      } catch (error) {
+      } catch {
         // User cancelled share
       }
     } else {

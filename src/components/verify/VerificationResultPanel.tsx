@@ -1,6 +1,6 @@
 'use client';
 
-import { QrCode, Files, CircleNotch, Warning, CheckCircle } from '@phosphor-icons/react';
+import { Files, CircleNotch, Warning, CheckCircle } from '@phosphor-icons/react';
 import { DatasetQR } from '@/components/dataset/DatasetQR';
 import { DatasetNFT } from '@/lib/types';
 

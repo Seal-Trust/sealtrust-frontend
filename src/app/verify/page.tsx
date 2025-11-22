@@ -4,23 +4,19 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Header } from '@/components/layout/Header';
 import { VerificationResultPanel } from '@/components/verify/VerificationResultPanel';
-import { SuiWalletButton } from '@/components/wallet/SuiWalletButton';
 import {
   ArrowLeft,
   Upload,
   CircleNotch,
-  MagnifyingGlass,
   Globe,
   Hash,
 } from '@phosphor-icons/react';
-import { useCurrentAccount } from '@mysten/dapp-kit';
 import { useSealTrust } from '@/hooks/useSealTrust';
 import { computeFileHash, computeUrlHash, formatHash } from '@/lib/utils/crypto';
 import { toast } from 'sonner';
 import { DatasetNFT } from '@/lib/types';
 
 export default function VerifyPage() {
-  const account = useCurrentAccount();
   const [verificationMethod, setVerificationMethod] = useState<'file' | 'url' | 'hash'>('file');
   const [fileUrl, setFileUrl] = useState('');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -66,6 +62,7 @@ export default function VerifyPage() {
       console.log('🚀 Auto-triggering verification for hash:', computedHash.substring(0, 16) + '...');
       handleVerify(computedHash);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [computedHash]); // Only trigger when computedHash changes
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {

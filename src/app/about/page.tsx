@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { Header } from '@/components/layout/Header';
-import { ArrowLeft, ShieldCheck, Cpu, Database, Globe, Lock, CloudArrowUp } from '@phosphor-icons/react';
+import { ArrowLeft, ShieldCheck, Database, Lock, CloudArrowUp } from '@phosphor-icons/react';
 
 export default function AboutPage() {
   return (

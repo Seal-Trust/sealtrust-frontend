@@ -1,7 +1,6 @@
 import { Transaction } from '@mysten/sui/transactions';
 import { SuiClient } from '@mysten/sui/client';
 import { toHex } from '@mysten/sui/utils';
-import type { SuiObjectChange } from '@mysten/sui/client';
 
 interface AllowlistFields {
   list?: string[];

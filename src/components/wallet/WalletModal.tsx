@@ -1,17 +1,16 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Image from 'next/image';
 import { useWallets, useConnectWallet } from '@mysten/dapp-kit';
 import {
   X,
   Wallet,
-  CheckCircle,
   CircleNotch,
   Warning,
   ArrowSquareOut,
   Shield
 } from '@phosphor-icons/react';
-import Image from 'next/image';
 
 interface WalletModalProps {
   isOpen: boolean;
@@ -121,10 +120,12 @@ export function WalletModal({ isOpen, onClose }: WalletModalProps) {
                     {/* Wallet Icon */}
                     <div className="w-12 h-12 rounded-lg bg-gray-100 flex items-center justify-center overflow-hidden">
                       {wallet.icon ? (
-                        <img
+                        <Image
                           src={wallet.icon}
                           alt={wallet.name}
-                          className="w-8 h-8"
+                          width={32}
+                          height={32}
+                          unoptimized
                         />
                       ) : (
                         <Wallet weight="regular" size={24} className="text-gray-600" />

@@ -556,8 +556,8 @@ export default function RegisterPage() {
 
       console.log('✅ Transaction successful:', result.digest);
 
-      // Get NFT ID from transaction
-      const txResponse = await suiClient.getTransactionBlock({
+      // Wait for transaction to be indexed, then get NFT ID
+      const txResponse = await suiClient.waitForTransaction({
         digest: result.digest,
         options: { showObjectChanges: true },
       });
