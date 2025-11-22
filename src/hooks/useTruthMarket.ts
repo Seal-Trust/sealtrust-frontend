@@ -299,21 +299,42 @@ export function useTruthMarket() {
     setError(null);
 
     try {
-      // Query transactions that called register_dataset_dev
-      const txBlocks = await suiClient.queryTransactionBlocks({
-        filter: {
-          MoveFunction: {
-            package: CONFIG.VERIFICATION_PACKAGE,
-            module: "truthmarket",
-            function: "register_dataset_dev",
+      // Query transactions that called register_dataset (production) AND register_dataset_dev
+      const [prodTxBlocks, devTxBlocks] = await Promise.all([
+        suiClient.queryTransactionBlocks({
+          filter: {
+            MoveFunction: {
+              package: CONFIG.VERIFICATION_PACKAGE,
+              module: "truthmarket",
+              function: "register_dataset",
+            },
           },
-        },
-        options: {
-          showObjectChanges: true,
-          showInput: true,
-        },
-        limit: 100,
-      });
+          options: {
+            showObjectChanges: true,
+            showInput: true,
+          },
+          limit: 100,
+        }),
+        suiClient.queryTransactionBlocks({
+          filter: {
+            MoveFunction: {
+              package: CONFIG.VERIFICATION_PACKAGE,
+              module: "truthmarket",
+              function: "register_dataset_dev",
+            },
+          },
+          options: {
+            showObjectChanges: true,
+            showInput: true,
+          },
+          limit: 100,
+        }),
+      ]);
+
+      // Combine both results
+      const txBlocks = {
+        data: [...prodTxBlocks.data, ...devTxBlocks.data],
+      };
 
       // Search through created NFTs for matching hash
       for (const txBlock of txBlocks.data) {
@@ -393,21 +414,42 @@ export function useTruthMarket() {
    */
   const getAllDatasets = useCallback(async (): Promise<RegistryEntry[]> => {
     try {
-      // Query all transactions that called register_dataset_dev
-      const txBlocks = await suiClient.queryTransactionBlocks({
-        filter: {
-          MoveFunction: {
-            package: CONFIG.VERIFICATION_PACKAGE,
-            module: "truthmarket",
-            function: "register_dataset_dev",
+      // Query all transactions that called register_dataset (production) AND register_dataset_dev
+      const [prodTxBlocks, devTxBlocks] = await Promise.all([
+        suiClient.queryTransactionBlocks({
+          filter: {
+            MoveFunction: {
+              package: CONFIG.VERIFICATION_PACKAGE,
+              module: "truthmarket",
+              function: "register_dataset",
+            },
           },
-        },
-        options: {
-          showObjectChanges: true,
-          showInput: true,
-        },
-        limit: 100,
-      });
+          options: {
+            showObjectChanges: true,
+            showInput: true,
+          },
+          limit: 100,
+        }),
+        suiClient.queryTransactionBlocks({
+          filter: {
+            MoveFunction: {
+              package: CONFIG.VERIFICATION_PACKAGE,
+              module: "truthmarket",
+              function: "register_dataset_dev",
+            },
+          },
+          options: {
+            showObjectChanges: true,
+            showInput: true,
+          },
+          limit: 100,
+        }),
+      ]);
+
+      // Combine both results
+      const txBlocks = {
+        data: [...prodTxBlocks.data, ...devTxBlocks.data],
+      };
 
       const entries: RegistryEntry[] = [];
 
