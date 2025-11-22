@@ -18,10 +18,9 @@ export const CONFIG = {
   // Enclave Package ID (official Nautilus)
   ENCLAVE_PACKAGE_ID: "0x0ff344b5b6f07b79b56a4ce1e9b1ef5a96ba219f6e6f2c49f194dee29dfc8b7f",
   // Seal Configuration for Encryption
-  // Official Seal allowlist package deployed on testnet (from Seal examples)
-  // This includes the seal_approve functions for access control
-  SEAL_PACKAGE_ID: process.env.NEXT_PUBLIC_SEAL_PACKAGE_ID || "0xc5ce2742cac46421b62028557f1d7aea8a4c50f651379a79afdf12cd88628807",
-  SEAL_ALLOWLIST_PACKAGE_ID: process.env.NEXT_PUBLIC_SEAL_ALLOWLIST_PACKAGE_ID || "0xc5ce2742cac46421b62028557f1d7aea8a4c50f651379a79afdf12cd88628807",
+  // TruthMarket's allowlist package deployed on testnet (2025-11-22)
+  SEAL_PACKAGE_ID: process.env.NEXT_PUBLIC_SEAL_PACKAGE_ID || "0x705937d7b0ffc7c37aa23a445ed52ae521a47adcdffa27fe965e0b73464a9925",
+  SEAL_ALLOWLIST_PACKAGE_ID: process.env.NEXT_PUBLIC_SEAL_ALLOWLIST_PACKAGE_ID || "0x705937d7b0ffc7c37aa23a445ed52ae521a47adcdffa27fe965e0b73464a9925",
 
   // Seal Key Servers - Public testnet providers (verified working)
   SEAL_KEY_SERVERS: process.env.NEXT_PUBLIC_SEAL_KEY_SERVERS?.split(',') || [
