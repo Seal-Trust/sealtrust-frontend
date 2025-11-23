@@ -362,6 +362,22 @@ export default function Home() {
                 >
                   Docs
                 </a>
+                <a
+                  href="https://github.com/Seal-Trust"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-muted-foreground hover:text-primary transition-colors"
+                >
+                  GitHub
+                </a>
+                <a
+                  href="https://x.com/sealtrust"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-muted-foreground hover:text-primary transition-colors"
+                >
+                  X (Twitter)
+                </a>
               </div>
             </div>
           </div>
