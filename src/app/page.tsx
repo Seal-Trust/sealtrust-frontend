@@ -73,7 +73,7 @@ export default function Home() {
                   <h1 className="text-4xl lg:text-5xl font-bold tracking-tight mb-6">
                     <span className="block">Cryptographic Verification</span>
                     <span className="block">and Encrypted Storage</span>
-                    <span className="block text-primary">for AI Training Datasets</span>
+                    <span className="block gradient-text">for AI Training Datasets</span>
                   </h1>
 
                   <p className="text-xl text-muted-foreground max-w-xl">
