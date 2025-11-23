@@ -26,7 +26,10 @@ export default function AboutPage() {
                 About SealTrust
               </h1>
               <p className="text-xl text-muted-foreground">
-                Encrypted storage and verification for AI training datasets. You control who can access your data.
+                Cryptographic Verification and Encrypted Storage for AI Training Datasets
+              </p>
+              <p className="text-lg text-primary font-semibold mt-2">
+                Trust. Encrypt. Verify.
               </p>
             </div>
 
@@ -178,9 +181,21 @@ export default function AboutPage() {
                     5
                   </div>
                   <div>
-                    <h3 className="font-semibold mb-2">Blockchain Record</h3>
+                    <h3 className="font-semibold mb-2">Record on Sui</h3>
                     <p className="text-muted-foreground text-sm">
                       DatasetNFT minted on Sui with hash, blob ID, and access control info. Immutable proof of integrity.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex gap-4">
+                  <div className="flex-shrink-0 w-8 h-8 rounded-full bg-orange-100 flex items-center justify-center font-bold text-primary">
+                    6
+                  </div>
+                  <div>
+                    <h3 className="font-semibold mb-2">Authorized Users Decrypt</h3>
+                    <p className="text-muted-foreground text-sm">
+                      Users on your allowlist can download and decrypt with Session Keys. Others cannot access.
                     </p>
                   </div>
                 </div>

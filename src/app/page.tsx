@@ -70,14 +70,14 @@ export default function Home() {
                     <span className="text-sm font-medium text-orange-900">Powered by Sui x Walrus x Seal x Nautilus</span>
                   </div>
 
-                  <h1 className="text-5xl lg:text-7xl font-bold tracking-tight">
-                    Secure Storage
-                    <span className="block gradient-text">for AI Training Data</span>
+                  <h1 className="text-5xl lg:text-6xl font-bold tracking-tight">
+                    Cryptographic Verification
+                    <span className="block gradient-text">and Encrypted Storage</span>
+                    <span className="block text-3xl lg:text-4xl font-semibold text-muted-foreground mt-2">for AI Training Datasets</span>
                   </h1>
 
-                  <p className="text-xl text-muted-foreground max-w-xl">
-                    Verify, encrypt, and store AI datasets with hardware-backed security.
-                    Control who can access your data with on-chain permissions.
+                  <p className="text-xl text-primary font-semibold">
+                    Trust. Encrypt. Verify.
                   </p>
                 </div>
 
