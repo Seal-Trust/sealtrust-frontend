@@ -70,16 +70,16 @@ export default function Home() {
                     <span className="text-sm font-medium text-orange-900">Powered by Sui x Walrus x Seal x Nautilus</span>
                   </div>
 
-                  <h1 className="text-5xl lg:text-6xl font-bold tracking-tight">
-                    Cryptographic Verification
-                    <span className="block gradient-text">and Encrypted Storage</span>
+                  <h1 className="text-5xl lg:text-6xl font-bold tracking-tight mb-6">
+                    Cryptographic Verification and
+                    <span className="block gradient-text"> Encrypted Storage</span>
                   </h1>
 
-                  <p className="text-xl text-muted-foreground max-w-xl">
-                    for AI Training Datasets. Hash, encrypt, store on Walrus, verify in TEE, record on Sui. Only authorized wallets can decrypt.
+                  <p className="text-xl text-muted-foreground max-w-xl mt-4">
+                    AI Training Datasets. Hash, encrypt, store on Walrus, verify in TEE, record on Sui. Only authorized wallets can decrypt.
                   </p>
 
-                  <p className="text-2xl font-bold text-primary">
+                  <p className="text-xl font-bold text-primary">
                     Trust. Encrypt. Verify.
                   </p>
                 </div>
