@@ -8,7 +8,6 @@ import { ArrowLeft, Database, Lightning, Shield, Clock, Upload, Lock, Plus, X, L
 import { useCurrentAccount, useSignAndExecuteTransaction, useSuiClient } from '@mysten/dapp-kit';
 import { SuiWalletButton } from '@/components/wallet/SuiWalletButton';
 import { toast } from 'sonner';
-import QRCode from 'react-qr-code';
 import { Transaction } from '@mysten/sui/transactions';
 import { sealService } from '@/lib/seal-service';
 import { walrusService } from '@/lib/walrus-service';
@@ -44,6 +43,7 @@ export default function RegisterPage() {
   const [file, setFile] = useState<File | null>(null);
   const [step, setStep] = useState<'input' | 'fetching' | 'hashing' | 'encrypting' | 'uploading' | 'verifying' | 'registering' | 'complete'>('input');
   const [receiptData, setReceiptData] = useState<ReceiptData | null>(null);
+  const [showModal, setShowModal] = useState(false);
   const [progress, setProgress] = useState('');
 
   // Initial access list - users to add to allowlist during registration
@@ -570,6 +570,7 @@ export default function RegisterPage() {
 
       // Success!
       setStep('complete');
+      setShowModal(true);
       setReceiptData({
         datasetUrl: datasetUrl || `file://${datasetFile.name}`,
         hash: originalHash,
@@ -650,12 +651,12 @@ export default function RegisterPage() {
       <Header />
 
       {/* Success Modal */}
-      {step === 'complete' && receiptData && (
+      {step === 'complete' && receiptData && showModal && (
         <DatasetReceipt
           {...receiptData}
           onClose={() => {
-            setStep('input');
-            setReceiptData(null);
+            // Don't reset - just hide modal, keep success state visible
+            setShowModal(false);
           }}
         />
       )}
@@ -790,25 +791,15 @@ export default function RegisterPage() {
                   <div className="space-y-4">
                     <DatasetReceipt {...receiptData} />
 
-                    <div className="pt-6 border-t border-border">
-                      <h3 className="font-semibold mb-4 text-center">Verification QR Code</h3>
-                      <div className="flex justify-center bg-white p-4 rounded-lg">
-                        <QRCode
-                          value={`${window.location.origin}/verify?hash=${receiptData.hash}`}
-                          size={200}
-                        />
-                      </div>
-                      <p className="text-xs text-center text-muted-foreground mt-2">
-                        Scan to verify this dataset
-                      </p>
-                    </div>
-
                     <button
                       onClick={() => {
                         setStep('input');
                         setDatasetUrl('');
                         setFile(null);
                         setReceiptData(null);
+                        setShowModal(false);
+                        setInitialMembers([]);
+                        setDescription('');
                       }}
                       className="w-full px-6 py-3 rounded-xl border border-border hover:bg-muted transition-all"
                     >
