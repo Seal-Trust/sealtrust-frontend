@@ -679,29 +679,29 @@ export default function RegisterPage() {
                   Register Dataset
                 </h1>
                 <p className="text-xl text-muted-foreground">
-                  Create a cryptographically signed timestamp for your AI training dataset.
-                  Verified by TEE and recorded immutably on-chain.
+                  Encrypt your dataset and control who can access it. Verified by TEE
+                  and recorded on Sui blockchain.
                 </p>
               </div>
 
               {/* Features */}
               <div className="space-y-4">
                 <div className="flex items-start gap-3">
-                  <Shield weight="duotone" size={24} className="text-primary mt-1" />
+                  <Lock weight="duotone" size={24} className="text-primary mt-1" />
                   <div>
-                    <h3 className="font-semibold mb-1">TEE Verified</h3>
+                    <h3 className="font-semibold mb-1">Encrypted Storage</h3>
                     <p className="text-muted-foreground text-sm">
-                      Hash computed inside AWS Nitro Enclave for hardware-backed authenticity
+                      Dataset encrypted with Seal before upload to Walrus
                     </p>
                   </div>
                 </div>
 
                 <div className="flex items-start gap-3">
-                  <Clock weight="duotone" size={24} className="text-primary mt-1" />
+                  <Shield weight="duotone" size={24} className="text-primary mt-1" />
                   <div>
-                    <h3 className="font-semibold mb-1">Immutable Timestamp</h3>
+                    <h3 className="font-semibold mb-1">Access Control</h3>
                     <p className="text-muted-foreground text-sm">
-                      Blockchain record proves exact dataset state at registration time
+                      Only wallets you authorize can decrypt and download
                     </p>
                   </div>
                 </div>
@@ -709,9 +709,9 @@ export default function RegisterPage() {
                 <div className="flex items-start gap-3">
                   <Lightning weight="duotone" size={24} className="text-primary mt-1" />
                   <div>
-                    <h3 className="font-semibold mb-1">Instant Verification</h3>
+                    <h3 className="font-semibold mb-1">TEE Verified</h3>
                     <p className="text-muted-foreground text-sm">
-                      Sub-second finality on Sui blockchain with cryptographic proof
+                      Hardware-backed signature from Nautilus enclave
                     </p>
                   </div>
                 </div>
@@ -720,9 +720,8 @@ export default function RegisterPage() {
               {/* Info Box */}
               <div className="bg-orange-50 border border-orange-200 rounded-xl p-4">
                 <p className="text-sm text-orange-900">
-                  <strong>How it works:</strong> Your dataset is verified by Nautilus (AWS Nitro Enclave),
-                  which computes a SHA-256 hash and signs it. This proof is then registered on Sui blockchain,
-                  creating an immutable timestamp record.
+                  <strong>How it works:</strong> Your dataset is hashed, encrypted with Seal, and uploaded to Walrus.
+                  Nautilus TEE verifies the metadata and signs it. The proof is recorded on Sui with your access control settings.
                 </p>
               </div>
             </div>

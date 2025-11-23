@@ -26,7 +26,7 @@ export default function AboutPage() {
                 About SealTrust
               </h1>
               <p className="text-xl text-muted-foreground">
-                Cryptographic timestamp verification for AI training datasets using Trusted Execution Environments and blockchain.
+                Encrypted storage and verification for AI training datasets. You control who can access your data.
               </p>
             </div>
 
@@ -36,20 +36,19 @@ export default function AboutPage() {
 
               <div className="prose prose-lg text-muted-foreground space-y-4">
                 <p>
-                  As AI models become more powerful and prevalent, the provenance and authenticity of training data
-                  has become critical. Dataset tampering, backdooring, and disputes over data ownership threaten
-                  the integrity of AI systems.
+                  AI teams need secure storage for training datasets. Unauthorized access, data tampering, and
+                  lack of access control put valuable data at risk.
                 </p>
 
                 <p>
-                  SealTrust provides cryptographic proof of dataset authenticity by combining cutting-edge
-                  technologies: AWS Nitro Enclaves (Nautilus), Sui blockchain, Walrus decentralized storage, and Seal encryption.
+                  SealTrust encrypts your datasets with Seal before storing them on Walrus. Only wallet addresses
+                  you authorize can decrypt and download the data. The Nautilus TEE verifies metadata with
+                  hardware-backed signatures, and Sui blockchain records an immutable proof of integrity.
                 </p>
 
                 <p>
-                  Every dataset registered through SealTrust receives a tamper-proof timestamp that proves
-                  exactly what data existed at a specific point in time, verified by hardware-backed cryptography
-                  and recorded immutably on-chain.
+                  The result: encrypted storage with on-chain access control. Your data stays private and
+                  tamper-proof, and you decide who gets access.
                 </p>
               </div>
             </section>
@@ -108,12 +107,12 @@ export default function AboutPage() {
                   <div className="flex items-start gap-3">
                     <Lock weight="duotone" size={24} className="text-primary mt-1" />
                     <div>
-                      <h3 className="font-semibold mb-2">Security Guarantees</h3>
+                      <h3 className="font-semibold mb-2">Seal Encryption</h3>
                       <ul className="text-sm text-muted-foreground space-y-1">
-                        <li>• Hardware root of trust</li>
-                        <li>• Cryptographic non-repudiation</li>
-                        <li>• Tamper-evident records</li>
-                        <li>• Verifiable computation</li>
+                        <li>• Encrypt before storage</li>
+                        <li>• On-chain allowlist access control</li>
+                        <li>• Only authorized wallets decrypt</li>
+                        <li>• Session keys for UX</li>
                       </ul>
                     </div>
                   </div>
@@ -123,7 +122,7 @@ export default function AboutPage() {
 
             {/* How It Works */}
             <section className="mb-16">
-              <h2 className="text-2xl font-bold mb-6">How Verification Works</h2>
+              <h2 className="text-2xl font-bold mb-6">How It Works</h2>
 
               <div className="space-y-6">
                 <div className="flex gap-4">
@@ -131,9 +130,9 @@ export default function AboutPage() {
                     1
                   </div>
                   <div>
-                    <h3 className="font-semibold mb-2">Dataset Submission</h3>
+                    <h3 className="font-semibold mb-2">Upload & Hash</h3>
                     <p className="text-muted-foreground text-sm">
-                      User provides dataset URL or uploads file. Frontend sends request to Nautilus enclave.
+                      Upload your dataset. SHA-256 hash is computed on the original file before encryption.
                     </p>
                   </div>
                 </div>
@@ -143,10 +142,9 @@ export default function AboutPage() {
                     2
                   </div>
                   <div>
-                    <h3 className="font-semibold mb-2">TEE Hash Computation</h3>
+                    <h3 className="font-semibold mb-2">Encrypt with Seal</h3>
                     <p className="text-muted-foreground text-sm">
-                      Inside AWS Nitro Enclave, SHA-256 hash is computed. Hardware attestation document proves
-                      the hash was generated in isolated environment.
+                      Dataset is encrypted using Seal. An allowlist is created on-chain to control who can decrypt.
                     </p>
                   </div>
                 </div>
@@ -156,9 +154,9 @@ export default function AboutPage() {
                     3
                   </div>
                   <div>
-                    <h3 className="font-semibold mb-2">Cryptographic Signature</h3>
+                    <h3 className="font-semibold mb-2">Store on Walrus</h3>
                     <p className="text-muted-foreground text-sm">
-                      Enclave signs the hash with ephemeral keypair. Signature proves authenticity and prevents tampering.
+                      Encrypted blob is uploaded to Walrus decentralized storage. No single point of failure.
                     </p>
                   </div>
                 </div>
@@ -168,9 +166,9 @@ export default function AboutPage() {
                     4
                   </div>
                   <div>
-                    <h3 className="font-semibold mb-2">Blockchain Registration</h3>
+                    <h3 className="font-semibold mb-2">TEE Verification</h3>
                     <p className="text-muted-foreground text-sm">
-                      Move contract on Sui validates signature and stores timestamp record. NFT certificate minted to user.
+                      Nautilus (AWS Nitro Enclave) verifies metadata and signs it with hardware-backed keys.
                     </p>
                   </div>
                 </div>
@@ -180,9 +178,9 @@ export default function AboutPage() {
                     5
                   </div>
                   <div>
-                    <h3 className="font-semibold mb-2">Decentralized Storage</h3>
+                    <h3 className="font-semibold mb-2">Blockchain Record</h3>
                     <p className="text-muted-foreground text-sm">
-                      Dataset metadata stored on Walrus for censorship-resistant access. BlobID linked to on-chain record.
+                      DatasetNFT minted on Sui with hash, blob ID, and access control info. Immutable proof of integrity.
                     </p>
                   </div>
                 </div>
@@ -195,30 +193,30 @@ export default function AboutPage() {
 
               <div className="bg-orange-50 border border-orange-200 rounded-xl p-6 space-y-4">
                 <div>
-                  <h3 className="font-semibold text-orange-900 mb-2">AI Model Training</h3>
+                  <h3 className="font-semibold text-orange-900 mb-2">Secure Dataset Sharing</h3>
                   <p className="text-sm text-orange-800">
-                    Prove which exact dataset version was used to train a model. Essential for reproducibility and audit compliance.
+                    Share training data with specific teams or partners. Add their wallets to your allowlist. They can decrypt. Others cannot.
                   </p>
                 </div>
 
                 <div>
-                  <h3 className="font-semibold text-orange-900 mb-2">Dataset Integrity Verification</h3>
+                  <h3 className="font-semibold text-orange-900 mb-2">Integrity Verification</h3>
                   <p className="text-sm text-orange-800">
-                    Verify dataset authenticity and detect tampering. Ensure data hasn&apos;t been modified since verification timestamp.
+                    Prove your dataset has not been tampered with. Hash is computed before encryption and recorded on-chain.
                   </p>
                 </div>
 
                 <div>
-                  <h3 className="font-semibold text-orange-900 mb-2">Regulatory Compliance</h3>
+                  <h3 className="font-semibold text-orange-900 mb-2">Access Control</h3>
                   <p className="text-sm text-orange-800">
-                    Demonstrate compliance with data governance requirements. Immutable audit trail for all training data.
+                    Manage who can download your datasets. Add or remove wallets from allowlist at any time.
                   </p>
                 </div>
 
                 <div>
-                  <h3 className="font-semibold text-orange-900 mb-2">Research Reproducibility</h3>
+                  <h3 className="font-semibold text-orange-900 mb-2">Audit Trail</h3>
                   <p className="text-sm text-orange-800">
-                    Academic researchers can timestamp datasets to ensure reproducibility and prevent disputes.
+                    Every registration is recorded on Sui blockchain. Immutable proof of what data existed and when.
                   </p>
                 </div>
               </div>
@@ -231,24 +229,24 @@ export default function AboutPage() {
               <div className="bg-white rounded-xl border border-border p-6">
                 <div className="space-y-4 text-sm text-muted-foreground">
                   <p>
-                    <strong className="text-foreground">Threat Model:</strong> SealTrust protects against dataset
-                    tampering, backdooring, and provenance disputes. It does NOT protect against malicious dataset
-                    creators or content validation (garbage in = garbage out).
+                    <strong className="text-foreground">Encryption:</strong> All datasets are encrypted with Seal
+                    before upload. Only wallets on your allowlist can decrypt and download the original data.
                   </p>
 
                   <p>
-                    <strong className="text-foreground">Trust Assumptions:</strong> Users trust AWS Nitro hardware,
-                    Sui blockchain validators, and Walrus storage nodes. No trust required in SealTrust operators.
+                    <strong className="text-foreground">Access Control:</strong> You create an on-chain allowlist
+                    during registration. Add or remove wallets anytime. Decryption keys are only released to
+                    authorized addresses.
                   </p>
 
                   <p>
-                    <strong className="text-foreground">Cryptographic Guarantees:</strong> SHA-256 collision
-                    resistance, Ed25519 signature security, and hardware attestation ensure tamper-evidence.
+                    <strong className="text-foreground">Integrity:</strong> Hash computed on original file before
+                    encryption. TEE signs metadata with hardware-backed keys. On-chain record is immutable.
                   </p>
 
                   <p>
-                    <strong className="text-foreground">Privacy:</strong> Datasets are encrypted with Seal before storage.
-                    Only authorized wallets can decrypt and access the original data.
+                    <strong className="text-foreground">Decentralization:</strong> Encrypted data stored on Walrus
+                    (no single point of failure). Records on Sui blockchain. No trust in SealTrust operators.
                   </p>
                 </div>
               </div>
@@ -260,20 +258,20 @@ export default function AboutPage() {
 
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div className="bg-white rounded-xl border border-border p-4">
+                  <div className="text-2xl font-bold text-primary">Seal</div>
+                  <div className="text-sm text-muted-foreground">Encrypted Storage</div>
+                </div>
+                <div className="bg-white rounded-xl border border-border p-4">
+                  <div className="text-2xl font-bold text-primary">Walrus</div>
+                  <div className="text-sm text-muted-foreground">Decentralized</div>
+                </div>
+                <div className="bg-white rounded-xl border border-border p-4">
                   <div className="text-2xl font-bold text-primary">TEE</div>
                   <div className="text-sm text-muted-foreground">Hardware Verified</div>
                 </div>
                 <div className="bg-white rounded-xl border border-border p-4">
-                  <div className="text-2xl font-bold text-primary">Sub-1s</div>
-                  <div className="text-sm text-muted-foreground">Sui Finality</div>
-                </div>
-                <div className="bg-white rounded-xl border border-border p-4">
-                  <div className="text-2xl font-bold text-primary">SHA-256</div>
-                  <div className="text-sm text-muted-foreground">Hash Algorithm</div>
-                </div>
-                <div className="bg-white rounded-xl border border-border p-4">
-                  <div className="text-2xl font-bold text-primary">Testnet</div>
-                  <div className="text-sm text-muted-foreground">Live Now</div>
+                  <div className="text-2xl font-bold text-primary">Sui</div>
+                  <div className="text-sm text-muted-foreground">On-chain Records</div>
                 </div>
               </div>
             </section>

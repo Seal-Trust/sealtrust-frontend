@@ -20,32 +20,32 @@ export default function Home() {
 
   const features = [
     {
+      icon: Lock,
+      title: 'Seal Encryption',
+      description: 'Datasets encrypted before storage. Only wallets you authorize can decrypt and download.',
+    },
+    {
       icon: ShieldCheck,
       title: 'TEE Verification',
-      description: 'Dataset hashes computed in AWS Nitro Enclaves for tamper-proof authenticity',
-    },
-    {
-      icon: Lock,
-      title: 'Cryptographic Signatures',
-      description: 'Every timestamp is cryptographically signed and verifiable on-chain',
-    },
-    {
-      icon: Database,
-      title: 'Immutable Records',
-      description: 'Timestamps stored permanently on Sui blockchain with complete audit trail',
+      description: 'Metadata verified in AWS Nitro Enclaves with hardware-backed signatures.',
     },
     {
       icon: CloudArrowUp,
-      title: 'Decentralized Storage',
-      description: 'Dataset metadata stored on Walrus for censorship-resistant access',
+      title: 'Walrus Storage',
+      description: 'Encrypted datasets stored on decentralized network. No single point of failure.',
+    },
+    {
+      icon: Database,
+      title: 'Sui Blockchain',
+      description: 'Immutable record of your dataset with proof of integrity and ownership.',
     },
   ];
 
   const benefits = [
-    { icon: CheckCircle, text: 'Prove exact dataset version at any point in time' },
-    { icon: CheckCircle, text: 'Prevent training data tampering and backdooring' },
-    { icon: CheckCircle, text: 'Verifiable provenance for AI model compliance' },
-    { icon: CheckCircle, text: 'Hardware-backed proof of authenticity' },
+    { icon: CheckCircle, text: 'Encrypt datasets so only authorized users can access' },
+    { icon: CheckCircle, text: 'Prove dataset integrity with hardware-backed verification' },
+    { icon: CheckCircle, text: 'Control access with on-chain allowlists you manage' },
+    { icon: CheckCircle, text: 'Store securely on decentralized infrastructure' },
   ];
 
   return (
@@ -67,32 +67,32 @@ export default function Home() {
                       <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75"></span>
                       <span className="relative inline-flex rounded-full h-2 w-2 bg-orange-500"></span>
                     </span>
-                    <span className="text-sm font-medium text-orange-900">Powered by Sui x Walrus x Nautilus</span>
+                    <span className="text-sm font-medium text-orange-900">Powered by Sui x Walrus x Seal x Nautilus</span>
                   </div>
 
                   <h1 className="text-5xl lg:text-7xl font-bold tracking-tight">
-                    Cryptographic Timestamps
+                    Secure Storage
                     <span className="block gradient-text">for AI Training Data</span>
                   </h1>
 
                   <p className="text-xl text-muted-foreground max-w-xl">
-                    Prove the authenticity and provenance of AI datasets with hardware-backed
-                    verification and blockchain timestamps.
+                    Verify, encrypt, and store AI datasets with hardware-backed security.
+                    Control who can access your data with on-chain permissions.
                   </p>
                 </div>
 
                 <div className="flex flex-wrap gap-6">
                   <div className="flex items-center gap-2">
+                    <Lock weight="duotone" size={24} className="text-primary" />
+                    <span className="font-medium">Encrypted Storage</span>
+                  </div>
+                  <div className="flex items-center gap-2">
                     <ShieldCheck weight="duotone" size={24} className="text-primary" />
                     <span className="font-medium">TEE Verified</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Clock weight="duotone" size={24} className="text-primary" />
-                    <span className="font-medium">Immutable timestamps</span>
-                  </div>
-                  <div className="flex items-center gap-2">
                     <Database weight="duotone" size={24} className="text-primary" />
-                    <span className="font-medium">On-chain provenance</span>
+                    <span className="font-medium">Access Control</span>
                   </div>
                 </div>
 
@@ -140,19 +140,19 @@ export default function Home() {
                           <ol className="space-y-2 text-sm text-muted-foreground">
                             <li className="flex items-start gap-2">
                               <span className="font-bold text-primary">1.</span>
-                              <span>Provide your dataset URL or upload file</span>
+                              <span>Upload dataset and set who can access it</span>
                             </li>
                             <li className="flex items-start gap-2">
                               <span className="font-bold text-primary">2.</span>
-                              <span>Nautilus TEE computes cryptographic hash</span>
+                              <span>Dataset is hashed, encrypted, and stored on Walrus</span>
                             </li>
                             <li className="flex items-start gap-2">
                               <span className="font-bold text-primary">3.</span>
-                              <span>Signature verified and registered on Sui blockchain</span>
+                              <span>Nautilus TEE verifies and signs the metadata</span>
                             </li>
                             <li className="flex items-start gap-2">
                               <span className="font-bold text-primary">4.</span>
-                              <span>Receive tamper-proof certificate with QR code</span>
+                              <span>Proof recorded on Sui. Only you control access.</span>
                             </li>
                           </ol>
                         </div>
@@ -211,7 +211,7 @@ export default function Home() {
                 Why AI teams choose SealTrust
               </h2>
               <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-                The only platform combining TEE verification, blockchain timestamps, and decentralized storage
+                Encrypted storage with access control, verified by hardware, recorded on blockchain
               </p>
             </div>
 
@@ -241,11 +241,11 @@ export default function Home() {
             <div className="grid lg:grid-cols-2 gap-12 items-center">
               <div>
                 <h2 className="text-4xl font-bold mb-6">
-                  The future of AI dataset verification
+                  Your data, your rules
                 </h2>
                 <p className="text-xl text-muted-foreground mb-8">
-                  Say goodbye to dataset tampering, training data disputes, and unverifiable provenance.
-                  With SealTrust, your datasets are cryptographically timestamped and immutably recorded.
+                  Stop worrying about unauthorized access or data tampering.
+                  With SealTrust, datasets are encrypted and only accessible to wallets you approve.
                 </p>
                 <ul className="space-y-4">
                   {benefits.map((benefit, index) => {
@@ -287,7 +287,7 @@ export default function Home() {
                     <div className="border-t-2 border-primary pt-6">
                       <div className="flex items-center justify-between">
                         <span className="font-semibold text-primary">SealTrust</span>
-                        <span className="font-bold text-success">TEE + Blockchain + Decentralized</span>
+                        <span className="font-bold text-success">Encrypted + Verified + Decentralized</span>
                       </div>
                     </div>
                   </div>
@@ -301,10 +301,10 @@ export default function Home() {
         <section className="py-20 bg-gradient-to-r from-orange-500 via-orange-600 to-red-500">
           <div className="container-fluid text-center text-white">
             <h2 className="text-4xl font-bold mb-4">
-              Ready to timestamp your AI datasets?
+              Ready to secure your AI datasets?
             </h2>
             <p className="text-xl mb-8 opacity-90">
-              Join the verifiable AI revolution. Cryptographic proof for every dataset.
+              Encrypt, verify, and control access. Your data stays yours.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link
