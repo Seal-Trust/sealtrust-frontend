@@ -73,10 +73,13 @@ export default function Home() {
                   <h1 className="text-5xl lg:text-6xl font-bold tracking-tight">
                     Cryptographic Verification
                     <span className="block gradient-text">and Encrypted Storage</span>
-                    <span className="block text-3xl lg:text-4xl font-semibold text-muted-foreground mt-2">for AI Training Datasets</span>
                   </h1>
 
-                  <p className="text-xl text-primary font-semibold">
+                  <p className="text-xl text-muted-foreground max-w-xl">
+                    for AI Training Datasets. Hash, encrypt, store on Walrus, verify in TEE, record on Sui. Only authorized wallets can decrypt.
+                  </p>
+
+                  <p className="text-2xl font-bold text-primary">
                     Trust. Encrypt. Verify.
                   </p>
                 </div>
