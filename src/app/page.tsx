@@ -371,7 +371,7 @@ export default function Home() {
                   GitHub
                 </a>
                 <a
-                  href="https://x.com/sealtrust"
+                  href="https://x.com/seal_trust"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-muted-foreground hover:text-primary transition-colors"
